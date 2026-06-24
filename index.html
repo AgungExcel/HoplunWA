@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web WA Blaster</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f0f2f5; }
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        
+        /* Toast Animation */
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        .toast-enter { animation: slideIn 0.3s ease-out forwards; }
+        .toast-exit { animation: slideOut 0.3s ease-in forwards; }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="bg-[#25D366] text-white shadow-md">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 256 256"><path d="M187.58,144.84l-32-16a8,8,0,0,0-8,.5l-14.69,9.8a40.55,40.55,0,0,1-16-16l9.8-14.69a8,8,0,0,0,.5-8l-16-32A8,8,0,0,0,104,64a40,40,0,0,0-40,40,88.1,88.1,0,0,0,88,88,40,40,0,0,0,40-40A8,8,0,0,0,187.58,144.84ZM152,176a72.08,72.08,0,0,1-72-72A24,24,0,0,1,99.29,80.46l11.48,23-7.92,11.87a8,8,0,0,0-.35,8.4A56.26,56.26,0,0,0,126.31,147a8,8,0,0,0,8.4-.35l11.87-7.92,23,11.48A24,24,0,0,1,152,176ZM232,128A104,104,0,0,1,79.12,219.82L45.07,231.17a16,16,0,0,1-20.24-20.24l11.35-34.05A104,104,0,1,1,232,128Zm-16,0A88,88,0,1,0,51.81,172.06a8,8,0,0,1-2.43,7.85l-10,30,30-10a8,8,0,0,1,7.85-2.43A88,88,0,0,0,216,128Z"></path></svg>
+            <h1 class="text-xl font-bold">Web WA Blaster</h1>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-6xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Inputs -->
+        <div class="lg:col-span-5 flex flex-col gap-5">
+            <!-- Setup Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    Persiapan Pesan
+                </h2>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Daftar Nomor Tujuan</label>
+                    <p class="text-xs text-slate-500 mb-2">Pisahkan dengan baris baru (Enter) atau koma. Format 08xxx atau 628xxx akan otomatis disesuaikan.</p>
+                    <textarea id="input-numbers" rows="5" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#25D366] focus:border-[#25D366] outline-none transition-all custom-scroll" placeholder="08123456789&#10;08987654321"></textarea>
+                </div>
+
+                <div class="mb-5">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Isi Pesan</label>
+                    <textarea id="input-message" rows="6" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#25D366] focus:border-[#25D366] outline-none transition-all custom-scroll" placeholder="Halo, ini adalah pesan broadcast..."></textarea>
+                </div>
+
+                <div class="mb-5 p-4 border border-emerald-200 bg-emerald-50 rounded-lg">
+                    <label class="block text-sm font-medium text-emerald-800 mb-1">Token Fonnte (Opsional untuk Kirim Otomatis)</label>
+                    <p class="text-xs text-emerald-600 mb-2">Jika diisi, pesan akan dikirim otomatis via API tanpa membuka WA Web. Dapatkan di <a href="https://fonnte.com" target="_blank" class="font-bold hover:underline">fonnte.com</a></p>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <input type="text" id="input-fonnte-token" class="flex-grow px-3 py-2 border border-emerald-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" placeholder="Masukkan Token Fonnte Anda...">
+                        <button onclick="checkFonnteDevice()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap shadow-sm">Cek Koneksi</button>
+                    </div>
+                    <div id="fonnte-status" class="mt-3 text-sm hidden p-2 rounded-md transition-all"></div>
+                </div>
+
+                <button onclick="processQueue()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-medium py-2.5 rounded-lg transition-colors flex justify-center items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    Proses & Buat Antrean
+                </button>
+            </div>
+
+            <!-- Info Card -->
+            <div class="bg-blue-50 text-blue-800 rounded-xl p-4 text-sm border border-blue-100">
+                <p class="font-semibold mb-1">💡 Cara Penggunaan Aman:</p>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li>Karena ini adalah aplikasi Web Statis, pesan dikirim satu per satu dengan mengklik tombol.</li>
+                    <li>Browser akan membuka tab WhatsApp Web/Aplikasi.</li>
+                    <li>Tekan "Kirim" di WhatsApp, lalu tutup tab dan kembali ke sini untuk nomor berikutnya.</li>
+                    <li>Beri jeda beberapa detik antar pesan agar nomor Anda tidak diblokir oleh WhatsApp.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Right Column: Queue -->
+        <div class="lg:col-span-7 flex flex-col gap-4">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col h-full">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold flex items-center gap-2">
+                        <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                        Status Antrean
+                    </h2>
+                    <span id="queue-counter" class="bg-slate-100 text-slate-600 text-xs font-bold px-2.5 py-1 rounded-full">0 / 0 Selesai</span>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="w-full bg-slate-100 rounded-full h-2.5 mb-4 overflow-hidden">
+                    <div id="progress-bar" class="bg-[#25D366] h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+
+                <!-- Action Bar -->
+                <div class="flex flex-col sm:flex-row gap-3 mb-4 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                    <button id="btn-send-next" onclick="sendNext()" disabled class="flex-1 bg-[#25D366] hover:bg-[#1da851] disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors flex justify-center items-center gap-2 shadow-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                        Manual WA Web
+                    </button>
+                    <button id="btn-auto-fonnte" onclick="startAutoFonnte()" disabled class="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors flex justify-center items-center gap-2 shadow-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        Otomatis Fonnte
+                    </button>
+                    <button onclick="resetQueue()" class="sm:w-auto w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium py-3 px-4 rounded-lg transition-colors">
+                        Reset
+                    </button>
+                </div>
+
+                <!-- Table -->
+                <div class="flex-grow overflow-auto custom-scroll border border-slate-200 rounded-lg">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-slate-500 bg-slate-50 sticky top-0 uppercase">
+                            <tr>
+                                <th class="px-4 py-3 font-semibold">No</th>
+                                <th class="px-4 py-3 font-semibold">Nomor Target</th>
+                                <th class="px-4 py-3 font-semibold text-center">Status</th>
+                                <th class="px-4 py-3 font-semibold text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="queue-body" class="divide-y divide-slate-100">
+                            <!-- Empty State -->
+                            <tr id="empty-state">
+                                <td colspan="4" class="px-4 py-8 text-center text-slate-400">
+                                    <svg class="w-12 h-12 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                                    Belum ada antrean. Masukkan data dan klik proses.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto py-4 text-center text-slate-500 text-sm">
+        <p>Aplikasi berjalan 100% di browser Anda. Privasi data terjamin.</p>
+    </footer>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+    <script>
+        // State Management
+        let queueData = [];
+        let globalMessage = "";
+        let isAutoRunning = false;
+
+        // Core Functions
+        function processQueue() {
+            const rawNumbers = document.getElementById('input-numbers').value;
+            const msg = document.getElementById('input-message').value;
+
+            if (!rawNumbers.trim()) {
+                showToast("Daftar nomor tidak boleh kosong!", "error");
+                return;
+            }
+            if (!msg.trim()) {
+                showToast("Isi pesan tidak boleh kosong!", "error");
+                return;
+            }
+
+            globalMessage = msg;
+            
+            // Split by comma or newline
+            const splitNumbers = rawNumbers.split(/[\n,]+/).map(n => n.trim()).filter(n => n !== "");
+            
+            // Reset queue
+            queueData = [];
+
+            // Parse numbers
+            splitNumbers.forEach((num, index) => {
+                let cleanNum = num.replace(/\D/g, ''); // Remove non-numeric characters
+                
+                // Format logic: if starts with 0, replace with 62 (Indonesian code). 
+                // You can customize this if targeting other countries.
+                if (cleanNum.startsWith('0')) {
+                    cleanNum = '62' + cleanNum.substring(1);
+                }
+                
+                // Add to queue if valid
+                if (cleanNum.length >= 9) { // Basic length validation
+                    queueData.push({
+                        id: index + 1,
+                        original: num,
+                        formatted: cleanNum,
+                        status: 'pending' // pending, sent
+                    });
+                }
+            });
+
+            if (queueData.length === 0) {
+                showToast("Tidak ada nomor valid yang ditemukan.", "error");
+                return;
+            }
+
+            showToast(`Berhasil memproses ${queueData.length} nomor.`, "success");
+            renderQueue();
+        }
+
+        function renderQueue() {
+            const tbody = document.getElementById('queue-body');
+            const emptyState = document.getElementById('empty-state');
+            const btnSendNext = document.getElementById('btn-send-next');
+            const btnAutoFonnte = document.getElementById('btn-auto-fonnte');
+            const counter = document.getElementById('queue-counter');
+            const progressBar = document.getElementById('progress-bar');
+
+            // Clear existing rows except empty state
+            tbody.innerHTML = '';
+
+            if (queueData.length === 0) {
+                tbody.appendChild(emptyState);
+                emptyState.style.display = 'table-row';
+                btnSendNext.disabled = true;
+                counter.innerText = "0 / 0 Selesai";
+                progressBar.style.width = "0%";
+                return;
+            }
+
+            let sentCount = 0;
+            let hasPending = false;
+
+            queueData.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+                
+                // Status Styling
+                let statusBadge = '';
+                if (item.status === 'pending') {
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-md text-xs font-medium bg-amber-100 text-amber-800">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Menunggu
+                    </span>`;
+                    hasPending = true;
+                } else if (item.status === 'sending') {
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
+                        <svg class="animate-spin -ml-1 mr-1 h-3 w-3 text-blue-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Memproses
+                    </span>`;
+                    hasPending = true; // Still counts as pending until done
+                } else if (item.status === 'failed') {
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-md text-xs font-medium bg-red-100 text-red-800">
+                        <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Gagal
+                    </span>`;
+                    // You might want to consider failed as not sent, but processed
+                } else {
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-md text-xs font-medium bg-emerald-100 text-emerald-800">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Terkirim
+                    </span>`;
+                    sentCount++;
+                }
+
+                // Action Button (Send specific)
+                let actionBtn = '';
+                if (item.status === 'pending' || item.status === 'failed') {
+                     actionBtn = `<button onclick="sendSpecific(${index})" class="text-[#25D366] hover:text-[#1da851] font-medium text-xs px-2 py-1 border border-[#25D366] rounded hover:bg-[#25D366] hover:text-white transition-colors" ${isAutoRunning ? 'disabled' : ''}>Kirim</button>`;
+                } else if (item.status === 'sent') {
+                     actionBtn = `<button onclick="markPending(${index})" class="text-slate-400 hover:text-slate-600 font-medium text-xs px-2 py-1 underline" ${isAutoRunning ? 'disabled' : ''}>Ulangi</button>`;
+                }
+
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-medium text-slate-500">${index + 1}</td>
+                    <td class="px-4 py-3">
+                        <div class="font-medium text-slate-800">${item.formatted}</div>
+                        <div class="text-xs text-slate-400">Input: ${item.original}</div>
+                    </td>
+                    <td class="px-4 py-3 text-center">${statusBadge}</td>
+                    <td class="px-4 py-3 text-right">${actionBtn}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Update UI Counters & Buttons
+            btnSendNext.disabled = !hasPending || isAutoRunning;
+            btnAutoFonnte.disabled = !hasPending || isAutoRunning;
+            
+            const progressPercentage = Math.round((sentCount / queueData.length) * 100);
+            counter.innerText = `${sentCount} / ${queueData.length} Selesai`;
+            progressBar.style.width = `${progressPercentage}%`;
+
+            if (!hasPending && queueData.length > 0) {
+                btnSendNext.innerText = "Selesai! 🎉";
+                btnAutoFonnte.innerText = "Selesai! 🎉";
+            } else {
+                btnSendNext.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg> Manual WA Web`;
+                
+                if (isAutoRunning) {
+                    btnAutoFonnte.innerHTML = `<svg class="animate-spin w-5 h-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Sedang Jalan...`;
+                } else {
+                    btnAutoFonnte.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Otomatis Fonnte`;
+                }
+            }
+        }
+
+        async function startAutoFonnte() {
+            const token = document.getElementById('input-fonnte-token').value.trim();
+            if (!token) {
+                showToast("Silakan masukkan Token Fonnte terlebih dahulu di form sebelah kiri!", "error");
+                document.getElementById('input-fonnte-token').focus();
+                return;
+            }
+
+            isAutoRunning = true;
+            renderQueue();
+            showToast("Memulai pengiriman otomatis via Fonnte...", "info");
+
+            for (let i = 0; i < queueData.length; i++) {
+                if (!isAutoRunning) break; // Jika dihentikan (misal saat reset)
+                
+                if (queueData[i].status === 'pending' || queueData[i].status === 'failed') {
+                    queueData[i].status = 'sending';
+                    renderQueue();
+
+                    const apiResult = await sendFonnteApi(i, token);
+                    
+                    // Handle specific errors gracefully to stop the loop
+                    if (!apiResult.success) {
+                        if (apiResult.reason && apiResult.reason.toLowerCase().includes("disconnected device")) {
+                            showToast("Proses dihentikan! Perangkat WA Anda terputus di Fonnte.", "error");
+                            
+                            // Tampilkan peringatan permanen yang sangat jelas
+                            const statusDiv = document.getElementById('fonnte-status');
+                            statusDiv.classList.remove('hidden');
+                            statusDiv.className = 'mt-3 text-sm p-3 rounded-md bg-red-50 text-red-700 border border-red-200';
+                            statusDiv.innerHTML = `❌ <strong>Perangkat WhatsApp Terputus!</strong><br>Sistem Fonnte menolak pengiriman karena WA Anda tidak terhubung. Silakan buka Dashboard Fonnte > Menu Device > Klik "Connect/Link Device".`;
+                            
+                            isAutoRunning = false;
+                            renderQueue();
+                            break;
+                        } else if (apiResult.reason && (apiResult.reason.toLowerCase().includes("invalid token") || apiResult.reason.toLowerCase().includes("unauthorized"))) {
+                            showToast("Proses dihentikan! Token Fonnte tidak valid.", "error");
+                            isAutoRunning = false;
+                            renderQueue();
+                            break;
+                        }
+                    }
+                    
+                    // Jeda 2 detik antar pesan agar tidak terkena limit API (Rate Limiting)
+                    await new Promise(r => setTimeout(r, 2000)); 
+                }
+            }
+
+            isAutoRunning = false;
+            renderQueue();
+            
+            // Cek apakah semua berhasil, jangan tampilkan sukses jika sengaja distop karena error fatal
+            const failedCount = queueData.filter(q => q.status === 'failed').length;
+            const hasPending = queueData.some(q => q.status === 'pending');
+            
+            if (!hasPending) {
+                if (failedCount > 0) {
+                    showToast(`Selesai, namun ada ${failedCount} pesan gagal.`, "error");
+                } else {
+                    showToast("Semua pesan berhasil dikirim via Fonnte!", "success");
+                }
+            }
+        }
+
+        async function checkFonnteDevice() {
+            const token = document.getElementById('input-fonnte-token').value.trim();
+            if (!token) {
+                showToast("Silakan masukkan Token Fonnte terlebih dahulu!", "error");
+                document.getElementById('input-fonnte-token').focus();
+                return;
+            }
+
+            const statusDiv = document.getElementById('fonnte-status');
+            statusDiv.classList.remove('hidden');
+            statusDiv.className = 'mt-3 text-sm p-3 rounded-md bg-blue-50 text-blue-700 border border-blue-200';
+            statusDiv.innerHTML = `<div class="flex items-center gap-2"><svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Memeriksa koneksi ke Fonnte...</div>`;
+
+            const myHeaders = new Headers();
+            myHeaders.append("Authorization", token);
+
+            try {
+                const response = await fetch("https://api.fonnte.com/device", {
+                    method: 'POST',
+                    headers: myHeaders,
+                    redirect: 'follow'
+                });
+                const result = await response.json();
+
+                if (result.status === true) {
+                    const deviceStatus = result.device_status || "Connected";
+                    if (deviceStatus.toLowerCase().includes("disconnect")) {
+                        statusDiv.className = 'mt-3 text-sm p-3 rounded-md bg-red-50 text-red-700 border border-red-200';
+                        statusDiv.innerHTML = `❌ <strong>Perangkat WhatsApp Terputus!</strong><br>Token valid, tetapi WhatsApp Anda belum di-scan atau HP mati. Silakan buka Dashboard Fonnte > Menu Device > Klik "Connect/Link Device".`;
+                    } else {
+                        statusDiv.className = 'mt-3 text-sm p-3 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200';
+                        statusDiv.innerHTML = `✅ <strong>Berhasil Terhubung!</strong><br>Nomor WA: ${result.device || 'Aktif'} | Kuota: ${result.quota || '-'}`;
+                    }
+                } else {
+                    statusDiv.className = 'mt-3 text-sm p-3 rounded-md bg-red-50 text-red-700 border border-red-200';
+                    statusDiv.innerHTML = `❌ <strong>Error Fonnte:</strong> ${result.reason || 'Token tidak valid'}`;
+                }
+            } catch (error) {
+                statusDiv.className = 'mt-3 text-sm p-3 rounded-md bg-red-50 text-red-700 border border-red-200';
+                statusDiv.innerHTML = `❌ <strong>Gagal Menghubungi Server:</strong> Periksa koneksi internet Anda atau Fonnte mungkin sedang down.`;
+                console.warn("Device Check Error:", error);
+            }
+        }
+
+        async function sendFonnteApi(index, token) {
+            const item = queueData[index];
+            const myHeaders = new Headers();
+            myHeaders.append("Authorization", token);
+
+            const formdata = new FormData();
+            formdata.append("target", item.formatted);
+            formdata.append("message", globalMessage);
+
+            const requestOptions = {
+                method: 'POST',
+                headers: myHeaders,
+                body: formdata,
+                redirect: 'follow'
+            };
+
+            try {
+                const response = await fetch("https://api.fonnte.com/send", requestOptions);
+                const result = await response.json();
+                
+                if (result.status === true) {
+                    queueData[index].status = 'sent';
+                    renderQueue();
+                    return { success: true };
+                } else {
+                    queueData[index].status = 'failed';
+                    // Kita menekan console.error bawaan agar tidak memunculkan notifikasi merah di browser jika masalahnya hanyalah "disconnected device"
+                    if (result.reason && !result.reason.toLowerCase().includes("disconnected")) {
+                        console.warn("Fonnte API Response:", result.reason);
+                    }
+                    renderQueue();
+                    return { success: false, reason: result.reason || "Unknown Error" };
+                }
+            } catch (error) {
+                console.warn("Fetch Error:", error);
+                queueData[index].status = 'failed';
+                renderQueue();
+                return { success: false, reason: "Network Error" };
+            }
+        }
+
+        function sendNext() {
+            const nextIndex = queueData.findIndex(item => item.status === 'pending');
+            if (nextIndex !== -1) {
+                sendSpecific(nextIndex);
+            }
+        }
+
+        function sendSpecific(index) {
+            const item = queueData[index];
+            const url = `https://wa.me/${item.formatted}?text=${encodeURIComponent(globalMessage)}`;
+            
+            // Open WA
+            window.open(url, '_blank');
+            
+            // Mark as sent
+            queueData[index].status = 'sent';
+            renderQueue();
+            
+            // Notification
+            showToast(`Membuka WhatsApp untuk ${item.formatted}`, "info");
+        }
+
+        function markPending(index) {
+            queueData[index].status = 'pending';
+            renderQueue();
+        }
+
+        function resetQueue() {
+            if(confirm("Apakah Anda yakin ingin menghapus semua antrean?")) {
+                isAutoRunning = false; // Stop Fonnte if running
+                queueData = [];
+                document.getElementById('input-numbers').value = "";
+                // document.getElementById('input-message').value = ""; // Optional: keep message
+                
+                // Hide status banner
+                document.getElementById('fonnte-status').classList.add('hidden');
+                
+                renderQueue();
+                showToast("Data telah di-reset.", "success");
+            }
+        }
+
+        // UI Helpers (Toast notification)
+        function showToast(message, type = "success") {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            // Color mapping based on type
+            const colors = {
+                success: "bg-white border-l-4 border-[#25D366] text-slate-800",
+                error: "bg-white border-l-4 border-red-500 text-slate-800",
+                info: "bg-slate-800 text-white"
+            };
+
+            const iconType = type === "error" 
+                ? `<svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`
+                : type === "info"
+                ? `<svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`
+                : `<svg class="w-5 h-5 text-[#25D366]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+
+            toast.className = `flex items-center gap-3 p-4 rounded shadow-lg min-w-[250px] font-medium text-sm toast-enter ${colors[type]}`;
+            toast.innerHTML = `${iconType} <span>${message}</span>`;
+            
+            container.appendChild(toast);
+
+            // Remove toast after 3 seconds
+            setTimeout(() => {
+                toast.classList.replace('toast-enter', 'toast-exit');
+                setTimeout(() => toast.remove(), 300); // Wait for exit animation
+            }, 3000);
+        }
+
+        // Initialize empty state
+        renderQueue();
+    </script>
+</body>
+</html>
