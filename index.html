@@ -1,533 +1,783 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web WA Blaster</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f0f2f5; }
-        .custom-scroll::-webkit-scrollbar { width: 6px; }
-        .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
-        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
-        
-        /* Toast Animation */
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
-        }
-        .toast-enter { animation: slideIn 0.3s ease-out forwards; }
-        .toast-exit { animation: slideOut 0.3s ease-in forwards; }
-    </style>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{--g:#087f70;--g2:#0aa184;--ink:#172b28;--muted:#75827e;--bg:#f3f7f5;--line:#e4ece8;--shadow:0 10px 25px rgba(0,0,0,0.05)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font:14px Inter,system-ui,Arial;color:var(--ink)}
+.layout{display:flex;min-height:100vh}
+.side{width:225px;background:#102f2a;color:#d7e7e1;padding:22px 14px;flex-shrink:0}
+.brand{display:flex;align-items:center;gap:10px;padding:8px 8px 25px}
+/* Logo HopLun disesuaikan agar tidak terpotong (contain) dan diberi background putih */
+.brand img{width:43px;height:43px;object-fit:contain;border-radius:12px;background:#ffffff;padding:2px}
+.brandtext{color:#fff;font-size:15px;font-weight:800;line-height:1.2}
+.brandtext small{display:block;color:#9bc7bb;font-size:10px;font-weight:600;letter-spacing:1.3px;margin-top:4px}
+.nav{display:flex;gap:11px;padding:12px;border-radius:10px;cursor:pointer;margin:3px 0;color:#bfd2cb;transition:all 0.2s}
+.nav.active,.nav:hover{background:#1c4940;color:#fff}
+.main{flex:1;min-width:0;padding:28px;max-width:1500px;margin:auto}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+.top h1{font-size:24px;margin:0}
+.muted{color:var(--muted);font-size:12px}
+.pill{background:#e0f4ec;color:#087f70;padding:7px 12px;border-radius:30px;font-weight:700;font-size:12px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:18px}
+.metric,.panel{background:white;border:1px solid var(--line);border-radius:15px;padding:18px;box-shadow:var(--shadow)}
+.metric span{font-size:12px;color:var(--muted)}
+.metric strong{display:block;font-size:26px;margin-top:7px}
+.panel{margin-bottom:16px}
+.head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:15px}
+.head h2{font-size:15px;margin:0}
+.controls{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:0;border-radius:9px;padding:10px 13px;font-weight:700;font-size:12px;cursor:pointer;background:var(--g);color:white;transition:opacity 0.2s}
+.btn:hover{opacity:0.85}
+.btn.light{background:#edf5f2;color:var(--g)}
+.btn.red{background:#fff0ee;color:#b63f38}
+.btn.small{padding:7px 9px}
+.input,select,textarea{font:inherit;padding:10px 11px;border:1px solid #dce5e1;border-radius:9px;width:100%;background:#fff;color:var(--ink);transition:border 0.2s}
+.input:focus,select:focus,textarea:focus{outline:none;border-color:var(--g)}
+textarea{min-height:105px;resize:vertical}
+label{display:block;font-size:12px;font-weight:700;color:#56645f;margin:11px 0 6px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tablewrap{overflow:auto;max-height:520px}
+table{border-collapse:collapse;width:100%;font-size:12px;white-space:nowrap}
+th{position:sticky;top:0;background:#f6f9f7;color:#65736e;text-align:left;padding:11px;border-bottom:1px solid var(--line)}
+td{padding:11px;border-bottom:1px solid #edf1ef}
+td .muted{margin-top:4px}
+.status{font-weight:700;color:#087f70}
+.status.warn{color:#a66c14}
+.status.bad{color:#b63f38}
+.hidden{display:none!important}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.note{font-size:12px;color:var(--muted);margin-top:8px}
+.empty{text-align:center;color:var(--muted);padding:28px}
+.search{max-width:350px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#163c34;color:white;padding:12px 18px;border-radius:11px;display:none;z-index:9999;box-shadow:var(--shadow)}
+.formcols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.modal{position:fixed;inset:0;background:rgba(9, 37, 31, 0.5);backdrop-filter:blur(3px);display:grid;place-items:center;padding:15px;z-index:50}
+.modalbox{background:white;border-radius:16px;padding:22px;width:min(500px,100%);box-shadow:var(--shadow);animation: pop 0.3s ease-out}
+@keyframes pop{from{transform:scale(0.95);opacity:0}to{transform:scale(1);opacity:1}}
+@media(max-width:900px){
+.side{width:64px;padding:12px 7px}
+.brand{justify-content:center;padding:8px 0 20px}
+.brand img{width:40px;height:40px}
+.brandtext{display:none}
+.nav{font-size:0;justify-content:center}
+.nav span{font-size:19px}
+.main{padding:16px}
+.cards{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:600px){
+.layout{display:block}
+.side{width:100%;display:flex;align-items:center;gap:5px;padding:8px;overflow:auto}
+.logo{display:none}
+.nav{margin:0;min-width:45px}
+.main{padding:12px}
+.top h1{font-size:20px}
+.row,.formcols{grid-template-columns:1fr}
+.cards{gap:8px}
+.metric{padding:13px}
+.metric strong{font-size:21px}
+}
+</style>
 </head>
-<body class="text-slate-800 min-h-screen flex flex-col">
-
-    <!-- Navbar -->
-    <nav class="bg-[#25D366] text-white shadow-md">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 256 256"><path d="M187.58,144.84l-32-16a8,8,0,0,0-8,.5l-14.69,9.8a40.55,40.55,0,0,1-16-16l9.8-14.69a8,8,0,0,0,.5-8l-16-32A8,8,0,0,0,104,64a40,40,0,0,0-40,40,88.1,88.1,0,0,0,88,88,40,40,0,0,0,40-40A8,8,0,0,0,187.58,144.84ZM152,176a72.08,72.08,0,0,1-72-72A24,24,0,0,1,99.29,80.46l11.48,23-7.92,11.87a8,8,0,0,0-.35,8.4A56.26,56.26,0,0,0,126.31,147a8,8,0,0,0,8.4-.35l11.87-7.92,23,11.48A24,24,0,0,1,152,176ZM232,128A104,104,0,0,1,79.12,219.82L45.07,231.17a16,16,0,0,1-20.24-20.24l11.35-34.05A104,104,0,1,1,232,128Zm-16,0A88,88,0,1,0,51.81,172.06a8,8,0,0,1-2.43,7.85l-10,30,30-10a8,8,0,0,1,7.85-2.43A88,88,0,0,0,216,128Z"></path></svg>
-            <h1 class="text-xl font-bold">Web WA Blaster</h1>
+<body>
+<div class="layout">
+    <aside class="side">
+        <div class="brand">
+            <img alt="Logo HopLun" src="hoplun.jpg">
+            <div class="brandtext">HopLun HR Desk<small>ATTENDANCE FOLLOW-UP</small></div>
         </div>
-    </nav>
+        <div class="nav active" onclick="page('dashboard')"><span>▦</span> Dashboard</div>
+        <div class="nav" onclick="page('employees')"><span>♙</span> Data Karyawan</div>
+        <div class="nav" onclick="page('send')"><span>◉</span> Kirim WhatsApp</div>
+        <div class="nav" onclick="page('history')"><span>◷</span> Riwayat & Laporan</div>
+        <div class="nav" onclick="page('settings')"><span>⚙</span> Pengaturan</div>
+    </aside>
 
-    <!-- Main Content -->
-    <main class="flex-grow max-w-6xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        <!-- Left Column: Inputs -->
-        <div class="lg:col-span-5 flex flex-col gap-5">
-            <!-- Setup Card -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-                <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                    Persiapan Pesan
-                </h2>
-                
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Daftar Nomor Tujuan</label>
-                    <p class="text-xs text-slate-500 mb-2">Pisahkan dengan baris baru (Enter) atau koma. Format 08xxx atau 628xxx akan otomatis disesuaikan.</p>
-                    <textarea id="input-numbers" rows="5" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#25D366] focus:border-[#25D366] outline-none transition-all custom-scroll" placeholder="08123456789&#10;08987654321"></textarea>
+    <main class="main">
+        <header class="top">
+            <div>
+                <h1 id="title">Dashboard</h1>
+                <div class="muted">HopLun • Attendance & Employee Follow-up</div>
+            </div>
+            <span class="pill">HR DESK</span>
+        </header>
+
+        <div id="dashboard" class="view">
+            <div class="cards" id="metrics"></div>
+            <section class="panel">
+                <div class="head">
+                    <h2>Aktivitas terbaru</h2>
+                    <button class="btn light" onclick="page('history')">Lihat riwayat</button>
                 </div>
+                <div id="recent"></div>
+            </section>
+        </div>
 
-                <div class="mb-5">
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Isi Pesan</label>
-                    <textarea id="input-message" rows="6" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#25D366] focus:border-[#25D366] outline-none transition-all custom-scroll" placeholder="Halo, ini adalah pesan broadcast..."></textarea>
-                </div>
-
-                <div class="mb-5 p-4 border border-emerald-200 bg-emerald-50 rounded-lg">
-                    <label class="block text-sm font-medium text-emerald-800 mb-1">Token Fonnte (Opsional untuk Kirim Otomatis)</label>
-                    <p class="text-xs text-emerald-600 mb-2">Jika diisi, pesan akan dikirim otomatis via API tanpa membuka WA Web. Dapatkan di <a href="https://fonnte.com" target="_blank" class="font-bold hover:underline">fonnte.com</a></p>
-                    <div class="flex flex-col sm:flex-row gap-2">
-                        <input type="text" id="input-fonnte-token" class="flex-grow px-3 py-2 border border-emerald-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" placeholder="Masukkan Token Fonnte Anda...">
-                        <button onclick="checkFonnteDevice()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap shadow-sm">Cek Koneksi</button>
+        <div id="employees" class="view hidden">
+            <section class="panel">
+                <div class="head">
+                    <h2>Database karyawan</h2>
+                    <div class="controls">
+                        <button class="btn" onclick="askSync()">Sinkronkan dari DB</button>
+                        <button class="btn light" onclick="document.getElementById('excel').click()">Import Excel</button>
+                        <button class="btn light" onclick="template()">Download template</button>
+                        <input id="excel" type="file" accept=".xlsx,.xls,.csv" hidden onchange="importFile(this)">
                     </div>
-                    <div id="fonnte-status" class="mt-3 text-sm hidden p-2 rounded-md transition-all"></div>
                 </div>
-
-                <button onclick="processQueue()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-medium py-2.5 rounded-lg transition-colors flex justify-center items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                    Proses & Buat Antrean
-                </button>
-            </div>
-
-            <!-- Info Card -->
-            <div class="bg-blue-50 text-blue-800 rounded-xl p-4 text-sm border border-blue-100">
-                <p class="font-semibold mb-1">💡 Cara Penggunaan Aman:</p>
-                <ul class="list-disc pl-5 space-y-1">
-                    <li>Karena ini adalah aplikasi Web Statis, pesan dikirim satu per satu dengan mengklik tombol.</li>
-                    <li>Browser akan membuka tab WhatsApp Web/Aplikasi.</li>
-                    <li>Tekan "Kirim" di WhatsApp, lalu tutup tab dan kembali ke sini untuk nomor berikutnya.</li>
-                    <li>Beri jeda beberapa detik antar pesan agar nomor Anda tidak diblokir oleh WhatsApp.</li>
-                </ul>
-            </div>
+                <div class="toolbar">
+                    <input class="input search" id="empsearch" placeholder="Cari No ID, nama, departemen, nomor..." oninput="renderEmployees()">
+                    <select id="filterwa" style="max-width:180px" onchange="renderEmployees()">
+                        <option value="">Semua status WA</option>
+                        <option>Aktif</option>
+                        <option>Tidak Aktif</option>
+                        <option>Nomor Berganti</option>
+                    </select>
+                    <button class="btn light" onclick="downloadReport()">Export Excel</button>
+                </div>
+                <div class="tablewrap" id="employeetable"></div>
+            </section>
         </div>
 
-        <!-- Right Column: Queue -->
-        <div class="lg:col-span-7 flex flex-col gap-4">
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col h-full">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-semibold flex items-center gap-2">
-                        <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
-                        Status Antrean
-                    </h2>
-                    <span id="queue-counter" class="bg-slate-100 text-slate-600 text-xs font-bold px-2.5 py-1 rounded-full">0 / 0 Selesai</span>
+        <div id="send" class="view hidden">
+            <section class="panel">
+                <div class="head">
+                    <h2>Siapkan tindak lanjut</h2>
+                    <span class="muted">Pilih karyawan mangkir</span>
                 </div>
-
-                <!-- Progress Bar -->
-                <div class="w-full bg-slate-100 rounded-full h-2.5 mb-4 overflow-hidden">
-                    <div id="progress-bar" class="bg-[#25D366] h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                <div class="row">
+                    <div>
+                        <label>Cari karyawan</label>
+                        <input class="input" id="sendsearch" placeholder="Nama atau No ID..." oninput="renderPicker()">
+                        <label>Pilih penerima</label>
+                        <select id="recipient" size="7" onchange="selected()"></select>
+                    </div>
+                    <div>
+                        <label>Template pesan</label>
+                        <select id="templatepick" onchange="useTemplate()">
+                            <option value="custom">Pesan khusus</option>
+                            <option value="miss">Konfirmasi ketidakhadiran</option>
+                            <option value="remind">Pengingat kehadiran</option>
+                        </select>
+                        <label>Isi pesan</label>
+                        <textarea id="msg" placeholder="Gunakan {nama} untuk otomatisasi nama karyawan"></textarea>
+                        <div class="note">Pesan terbuka di WhatsApp. Petugas menekan Kirim pada aplikasi WhatsApp.</div>
+                    </div>
                 </div>
-
-                <!-- Action Bar -->
-                <div class="flex flex-col sm:flex-row gap-3 mb-4 p-3 bg-slate-50 rounded-lg border border-slate-100">
-                    <button id="btn-send-next" onclick="sendNext()" disabled class="flex-1 bg-[#25D366] hover:bg-[#1da851] disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors flex justify-center items-center gap-2 shadow-sm">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                        Manual WA Web
-                    </button>
-                    <button id="btn-auto-fonnte" onclick="startAutoFonnte()" disabled class="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors flex justify-center items-center gap-2 shadow-sm">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                        Otomatis Fonnte
-                    </button>
-                    <button onclick="resetQueue()" class="sm:w-auto w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium py-3 px-4 rounded-lg transition-colors">
-                        Reset
-                    </button>
+                <div class="controls" style="margin-top:14px">
+                    <button class="btn" onclick="openWA()">Buka WhatsApp</button>
+                    <button class="btn light" onclick="page('history')">Lihat riwayat</button>
                 </div>
-
-                <!-- Table -->
-                <div class="flex-grow overflow-auto custom-scroll border border-slate-200 rounded-lg">
-                    <table class="w-full text-sm text-left">
-                        <thead class="text-xs text-slate-500 bg-slate-50 sticky top-0 uppercase">
-                            <tr>
-                                <th class="px-4 py-3 font-semibold">No</th>
-                                <th class="px-4 py-3 font-semibold">Nomor Target</th>
-                                <th class="px-4 py-3 font-semibold text-center">Status</th>
-                                <th class="px-4 py-3 font-semibold text-right">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="queue-body" class="divide-y divide-slate-100">
-                            <!-- Empty State -->
-                            <tr id="empty-state">
-                                <td colspan="4" class="px-4 py-8 text-center text-slate-400">
-                                    <svg class="w-12 h-12 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
-                                    Belum ada antrean. Masukkan data dan klik proses.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            </section>
         </div>
+
+        <div id="history" class="view hidden">
+            <section class="panel">
+                <div class="head">
+                    <h2>Riwayat aktivitas WhatsApp</h2>
+                    <button class="btn" onclick="downloadReport()">Download Excel</button>
+                </div>
+                <div class="toolbar">
+                    <input class="input search" id="histsearch" placeholder="Cari nama, nomor, status..." oninput="renderHistory()">
+                    <select id="histstatus" style="max-width:220px" onchange="renderHistory()">
+                        <option value="">Semua status</option>
+                        <option>Chat dibuka — belum dikonfirmasi</option>
+                        <option>Terkirim (konfirmasi petugas)</option>
+                        <option>Gagal</option>
+                        <option>Nomor tidak aktif</option>
+                        <option>Nomor berganti</option>
+                        <option>Tidak ditindaklanjuti</option>
+                    </select>
+                </div>
+                <div class="tablewrap" id="historytable"></div>
+            </section>
+        </div>
+        
+        <!-- PENGATURAN TEMPLATE -->
+        <div id="settings" class="view hidden">
+            <section class="panel" style="max-width: 800px;">
+                <div class="head">
+                    <h2>Pengaturan Template Pesan</h2>
+                    <span class="muted">Tersimpan di perangkat Anda</span>
+                </div>
+                <p class="muted" style="margin-top:0">Gunakan tag <b>{nama}</b> untuk memanggil nama karyawan secara otomatis ke dalam teks.</p>
+                
+                <label>Konfirmasi Ketidakhadiran (Mangkir)</label>
+                <textarea id="setting-tpl-miss"></textarea>
+                
+                <label>Pengingat Kehadiran</label>
+                <textarea id="setting-tpl-remind"></textarea>
+                
+                <div class="controls" style="margin-top:16px">
+                    <button class="btn" onclick="saveTemplates()">Simpan Template</button>
+                </div>
+            </section>
+        </div>
+
     </main>
+</div>
 
-    <!-- Footer -->
-    <footer class="mt-auto py-4 text-center text-slate-500 text-sm">
-        <p>Aplikasi berjalan 100% di browser Anda. Privasi data terjamin.</p>
-    </footer>
+<!-- COMPONENT: Notifikasi / Toast -->
+<div id="toast" class="toast"></div>
 
-    <!-- Toast Container -->
-    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+<!-- COMPONENT: Modal Dialog Confirm (Custom UI untuk mengganti confirm() bawaan) -->
+<div id="modal-confirm" class="modal hidden">
+    <div class="modalbox" style="width: min(400px, 100%); text-align: center;">
+        <div class="head" style="justify-content: center;">
+            <h2 id="confirm-title" style="font-size: 18px;">Konfirmasi</h2>
+        </div>
+        <p id="confirm-msg" style="margin: 15px 0 25px; color: var(--muted); font-size: 14px; line-height: 1.5;"></p>
+        <div class="controls" style="justify-content: center; gap: 12px;">
+            <button class="btn light" onclick="closeConfirm()">Batal</button>
+            <button class="btn red" id="confirm-yes">Ya, Lanjutkan</button>
+        </div>
+    </div>
+</div>
 
-    <script>
-        // State Management
-        let queueData = [];
-        let globalMessage = "";
-        let isAutoRunning = false;
+<!-- COMPONENT: Modal Update Riwayat Status -->
+<div id="modal-history" class="modal hidden">
+    <div class="modalbox">
+        <div class="head">
+            <h2>Update Status Riwayat</h2>
+            <button class="btn light" onclick="closeHistoryModal()">Tutup</button>
+        </div>
+        <input id="hist-id" hidden>
+        <input id="hist-phone" hidden>
+        <input id="hist-time" hidden>
+        <label>Status Pengiriman Baru</label>
+        <select id="hist-new-status" class="input">
+            <option>Terkirim (konfirmasi petugas)</option>
+            <option>Gagal</option>
+            <option>Nomor tidak aktif</option>
+            <option>Nomor berganti</option>
+            <option>Tidak ditindaklanjuti</option>
+        </select>
+        <label>Keterangan / Alasan (Opsional)</label>
+        <input class="input" id="hist-new-note" placeholder="Contoh: Nomor sudah tidak terdaftar / Pending HR">
+        <div class="controls" style="margin-top:16px">
+            <button class="btn" onclick="saveHistoryStatus()">Simpan Status</button>
+        </div>
+    </div>
+</div>
 
-        // Core Functions
-        function processQueue() {
-            const rawNumbers = document.getElementById('input-numbers').value;
-            const msg = document.getElementById('input-message').value;
+<!-- COMPONENT: Modal Edit Kontak WA -->
+<div id="modal" class="modal hidden">
+    <div class="modalbox">
+        <div class="head">
+            <h2 id="modtitle">Perbarui nomor/status</h2>
+            <button class="btn light" onclick="closeModal()">Tutup</button>
+        </div>
+        <input id="editkey" hidden>
+        <label>Nomor WhatsApp</label>
+        <input class="input" id="editphone">
+        <label>Status WA</label>
+        <select id="editstatus" class="input">
+            <option>Aktif</option>
+            <option>Tidak Aktif</option>
+            <option>Nomor Berganti</option>
+        </select>
+        <label>Keterangan / alasan</label>
+        <input class="input" id="editnote" placeholder="Contoh: nomor tidak terdaftar / nomor baru">
+        <div class="controls" style="margin-top:16px">
+            <button class="btn" onclick="saveEdit()">Simpan perubahan</button>
+        </div>
+    </div>
+</div>
 
-            if (!rawNumbers.trim()) {
-                showToast("Daftar nomor tidak boleh kosong!", "error");
-                return;
-            }
-            if (!msg.trim()) {
-                showToast("Isi pesan tidak boleh kosong!", "error");
-                return;
-            }
+<script>
+// =====================================================================
+// KONFIGURASI GITHUB PAGES / HOSTING EKSTERNAL
+// =====================================================================
+// Salin Web App URL dari GAS (doPost) dan paste di sini jika di-hosting di luar Google (mis. Github)
+const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxh5UZBSrDYVAXB9KDyGiXisZnDTbFTKDdESqlYDGs1k6mlZjFQKOxF29frwfE8Lo_D_Q/exec"; 
+// =====================================================================
 
-            globalMessage = msg;
-            
-            // Split by comma or newline
-            const splitNumbers = rawNumbers.split(/[\n,]+/).map(n => n.trim()).filter(n => n !== "");
-            
-            // Reset queue
-            queueData = [];
+// MOCK API untuk mengakomodasi Github Pages dan environment lokal
+if (typeof google === 'undefined' || typeof google.script === 'undefined') {
+  window.google = {
+    script: {
+      run: {
+        withSuccessHandler: function(cb) { this._cb = cb; return this; },
+        withFailureHandler: function(fb) { this._fb = fb; return this; },
+        _call: function(method, args) {
+          if (GAS_WEB_APP_URL) {
+            fetch(GAS_WEB_APP_URL, { 
+              method: 'POST', 
+              body: JSON.stringify({ method: method, args: args }), 
+              headers: { 'Content-Type': 'text/plain' }
+            })
+            .then(function(res){ return res.json(); })
+            .then(function(data){
+              if(data.error && this._fb) this._fb(new Error(data.error));
+              else if(this._cb) this._cb(data.result);
+            }.bind(this))
+            .catch(function(err){ if(this._fb) this._fb(err); }.bind(this));
+          } else {
+             var self = this;
+             setTimeout(function(){
+                if (method === 'getData') { if(self._cb) self._cb({contacts: [], history: []}); }
+                else if (method === 'syncEmployees') { if(self._cb) self._cb({count: 0}); }
+                else if (method === 'importRows') { if(self._cb) self._cb({added:0, updated:0}); }
+                else if (method === 'xlsxReport') { if(self._fb) self._fb(new Error("Export Excel butuh URL API")); }
+                else { if(self._cb) self._cb(); }
+             }, 300);
+          }
+          return this;
+        },
+        getData: function() { return this._call('getData', Array.prototype.slice.call(arguments)); },
+        updateContact: function() { return this._call('updateContact', Array.prototype.slice.call(arguments)); },
+        recordActivity: function() { return this._call('recordActivity', Array.prototype.slice.call(arguments)); },
+        updateHistoryStatus: function() { return this._call('updateHistoryStatus', Array.prototype.slice.call(arguments)); },
+        syncEmployees: function() { return this._call('syncEmployees', Array.prototype.slice.call(arguments)); },
+        importRows: function() { return this._call('importRows', Array.prototype.slice.call(arguments)); },
+        xlsxReport: function() { return this._call('xlsxReport', Array.prototype.slice.call(arguments)); }
+      }
+    }
+  };
+}
 
-            // Parse numbers
-            splitNumbers.forEach((num, index) => {
-                let cleanNum = num.replace(/\D/g, ''); // Remove non-numeric characters
-                
-                // Format logic: if starts with 0, replace with 62 (Indonesian code). 
-                // You can customize this if targeting other countries.
-                if (cleanNum.startsWith('0')) {
-                    cleanNum = '62' + cleanNum.substring(1);
-                }
-                
-                // Add to queue if valid
-                if (cleanNum.length >= 9) { // Basic length validation
-                    queueData.push({
-                        id: index + 1,
-                        original: num,
-                        formatted: cleanNum,
-                        status: 'pending' // pending, sent
-                    });
-                }
-            });
+// Variables
+var contacts = [];
+var hist = [];
+var chosen = null;
+var confirmCallback = null; 
 
-            if (queueData.length === 0) {
-                showToast("Tidak ada nomor valid yang ditemukan.", "error");
-                return;
-            }
+// Pengaturan Template Lokal
+var defaultTemplates = {
+    miss: 'Halo {nama}, kami mencatat Anda belum hadir bekerja. Mohon konfirmasi alasan ketidakhadiran dan status kehadiran Anda. Terima kasih.',
+    remind: 'Halo {nama}, mohon konfirmasi kehadiran Anda dan segera hubungi HR jika terdapat kendala. Terima kasih.'
+};
 
-            showToast(`Berhasil memproses ${queueData.length} nomor.`, "success");
-            renderQueue();
+var templates = defaultTemplates;
+if (localStorage.getItem('hoplun_templates')) {
+    try {
+        templates = JSON.parse(localStorage.getItem('hoplun_templates'));
+    } catch(e) {}
+}
+
+function initTemplates() {
+    var tplMiss = document.getElementById('setting-tpl-miss');
+    var tplRemind = document.getElementById('setting-tpl-remind');
+    if (tplMiss) tplMiss.value = templates.miss || defaultTemplates.miss;
+    if (tplRemind) tplRemind.value = templates.remind || defaultTemplates.remind;
+}
+
+function saveTemplates() {
+    templates.miss = document.getElementById('setting-tpl-miss').value;
+    templates.remind = document.getElementById('setting-tpl-remind').value;
+    localStorage.setItem('hoplun_templates', JSON.stringify(templates));
+    toast('Pengaturan template berhasil disimpan!');
+}
+
+function toast(t) {
+    var x = document.getElementById('toast');
+    x.textContent = t;
+    x.style.display = 'block';
+    setTimeout(function(){ x.style.display = 'none'; }, 2800);
+}
+
+function load() {
+    google.script.run.withSuccessHandler(function(d) {
+        contacts = d.contacts ? d.contacts : [];
+        hist = d.history ? d.history : [];
+        renderAll();
+    }).withFailureHandler(function(e) {
+        toast(e.message ? e.message : e);
+    }).getData();
+}
+
+function page(p) {
+    var target = document.getElementById(p);
+    if(!target) return;
+    var views = document.querySelectorAll('.view');
+    for(var i=0; i<views.length; i++) views[i].classList.add('hidden');
+    target.classList.remove('hidden');
+    
+    var navs = document.querySelectorAll('.nav');
+    for(var i=0; i<navs.length; i++) {
+        if(navs[i].getAttribute('onclick') === "page('" + p + "')") {
+            navs[i].classList.add('active');
+        } else {
+            navs[i].classList.remove('active');
         }
+    }
+    
+    var titles = {dashboard:'Dashboard', employees:'Data Karyawan', send:'Kirim WhatsApp', history:'Riwayat & Laporan', settings:'Pengaturan Template'};
+    document.getElementById('title').textContent = titles[p] ? titles[p] : 'HopLun HR Desk';
+    if(p === 'send') renderPicker();
+}
 
-        function renderQueue() {
-            const tbody = document.getElementById('queue-body');
-            const emptyState = document.getElementById('empty-state');
-            const btnSendNext = document.getElementById('btn-send-next');
-            const btnAutoFonnte = document.getElementById('btn-auto-fonnte');
-            const counter = document.getElementById('queue-counter');
-            const progressBar = document.getElementById('progress-bar');
+function renderAll() {
+    renderMetrics();
+    renderEmployees();
+    renderHistory();
+    renderRecent();
+    renderPicker();
+    initTemplates();
+}
 
-            // Clear existing rows except empty state
-            tbody.innerHTML = '';
+function renderMetrics() {
+    var sent = 0, failed = 0, opened = 0;
+    for(var i=0; i<hist.length; i++) {
+        if(hist[i].status === 'Terkirim (konfirmasi petugas)') sent++;
+        else if(hist[i].status === 'Gagal' || hist[i].status === 'Nomor tidak aktif' || hist[i].status === 'Nomor berganti') failed++;
+        else if(hist[i].status && hist[i].status.indexOf('belum dikonfirmasi') !== -1) opened++;
+    }
+    
+    var arr = [
+        ['Total karyawan', contacts.length],
+        ['Terkirim*', sent],
+        ['Belum konfirmasi', opened],
+        ['Gagal / kendala', failed]
+    ];
+    
+    var html = '';
+    for(var i=0; i<arr.length; i++) {
+        html += '<div class="metric"><span>' + arr[i][0] + '</span><strong>' + arr[i][1] + '</strong></div>';
+    }
+    document.getElementById('metrics').innerHTML = html;
+}
 
-            if (queueData.length === 0) {
-                tbody.appendChild(emptyState);
-                emptyState.style.display = 'table-row';
-                btnSendNext.disabled = true;
-                counter.innerText = "0 / 0 Selesai";
-                progressBar.style.width = "0%";
-                return;
-            }
+function table(headers, rows) {
+    var h = '';
+    for(var i=0; i<headers.length; i++) h += '<th>' + headers[i] + '</th>';
+    var b = rows.length ? rows.join('') : '<tr><td colspan="'+headers.length+'" class="empty">Tidak ada data</td></tr>';
+    return '<table><thead><tr>' + h + '</tr></thead><tbody>' + b + '</tbody></table>';
+}
 
-            let sentCount = 0;
-            let hasPending = false;
+function renderEmployees() {
+    var empInput = document.getElementById('empsearch');
+    var q = empInput ? empInput.value.toLowerCase() : '';
+    var filterInput = document.getElementById('filterwa');
+    var f = filterInput ? filterInput.value : '';
+    
+    var arr = [];
+    for(var i=0; i<contacts.length; i++) {
+        var c = contacts[i];
+        var str = [c.id, c.name, c.dept, c.phone].join(' ').toLowerCase();
+        if(str.indexOf(q) !== -1 && (!f || c.waStatus === f)) {
+            arr.push(c);
+        }
+    }
+    
+    var rows = [];
+    for(var i=0; i<arr.length; i++) {
+        var c = arr[i];
+        var warnClass = c.waStatus === 'Aktif' ? '' : 'warn';
+        rows.push('<tr><td>' + esc(c.id) + '</td><td><b>' + esc(c.name) + '</b><div class="muted">' + esc(c.dept) + '</div></td><td>' + esc(c.phone) + '</td><td><span class="status ' + warnClass + '">' + esc(c.waStatus) + '</span><div class="muted">' + esc(c.note) + '</div></td><td><button class="btn light small" onclick="edit(\'' + c.key + '\')">Edit WA</button> <button class="btn small" onclick="chooseSend(\'' + c.key + '\')">WA</button></td></tr>');
+    }
+    document.getElementById('employeetable').innerHTML = table(['No ID','Nama / Dept','Nomor HP','Status','Aksi'], rows);
+}
 
-            queueData.forEach((item, index) => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 transition-colors";
-                
-                // Status Styling
-                let statusBadge = '';
-                if (item.status === 'pending') {
-                    statusBadge = `<span class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-md text-xs font-medium bg-amber-100 text-amber-800">
-                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Menunggu
-                    </span>`;
-                    hasPending = true;
-                } else if (item.status === 'sending') {
-                    statusBadge = `<span class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
-                        <svg class="animate-spin -ml-1 mr-1 h-3 w-3 text-blue-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Memproses
-                    </span>`;
-                    hasPending = true; // Still counts as pending until done
-                } else if (item.status === 'failed') {
-                    statusBadge = `<span class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-md text-xs font-medium bg-red-100 text-red-800">
-                        <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Gagal
-                    </span>`;
-                    // You might want to consider failed as not sent, but processed
-                } else {
-                    statusBadge = `<span class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-md text-xs font-medium bg-emerald-100 text-emerald-800">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Terkirim
-                    </span>`;
-                    sentCount++;
-                }
+function renderHistory() {
+    var histInput = document.getElementById('histsearch');
+    var q = histInput ? histInput.value.toLowerCase() : '';
+    var statusInput = document.getElementById('histstatus');
+    var f = statusInput ? statusInput.value : '';
+    
+    var arr = [];
+    for(var i=0; i<hist.length; i++) {
+        var h = hist[i];
+        var str = [h.name, h.id, h.phone, h.status, h.note].join(' ').toLowerCase();
+        if(str.indexOf(q) !== -1 && (!f || h.status === f)) {
+            arr.push(h);
+        }
+    }
+    
+    var rows = [];
+    for(var i=0; i<arr.length; i++) {
+        var h = arr[i];
+        var msgShort = h.message ? h.message.slice(0,70) : '';
+        rows.push('<tr><td>' + esc(h.time) + '</td><td>' + esc(h.id) + '<div class="muted">' + esc(h.name) + '</div></td><td>' + esc(h.phone) + '</td><td>' + esc(h.status) + '<div class="muted">' + esc(h.note) + '</div></td><td title="' + esc(h.message) + '">' + esc(msgShort) + '...</td><td><button class="btn light small" onclick="openHistoryModal(\'' + esc(h.time) + '\',\'' + esc(h.id) + '\',\'' + esc(h.phone) + '\')">Update status</button></td></tr>');
+    }
+    document.getElementById('historytable').innerHTML = table(['Waktu','Karyawan','Nomor','Status / Keterangan','Pesan','Aksi'], rows);
+}
 
-                // Action Button (Send specific)
-                let actionBtn = '';
-                if (item.status === 'pending' || item.status === 'failed') {
-                     actionBtn = `<button onclick="sendSpecific(${index})" class="text-[#25D366] hover:text-[#1da851] font-medium text-xs px-2 py-1 border border-[#25D366] rounded hover:bg-[#25D366] hover:text-white transition-colors" ${isAutoRunning ? 'disabled' : ''}>Kirim</button>`;
-                } else if (item.status === 'sent') {
-                     actionBtn = `<button onclick="markPending(${index})" class="text-slate-400 hover:text-slate-600 font-medium text-xs px-2 py-1 underline" ${isAutoRunning ? 'disabled' : ''}>Ulangi</button>`;
-                }
+function renderRecent() {
+    var rows = [];
+    var limit = hist.length < 6 ? hist.length : 6;
+    for(var i=0; i<limit; i++) {
+        var h = hist[i];
+        rows.push('<tr><td>' + esc(h.time) + '</td><td>' + esc(h.name) + '</td><td>' + esc(h.phone) + '</td><td>' + esc(h.status) + '</td></tr>');
+    }
+    document.getElementById('recent').innerHTML = table(['Waktu','Nama','Nomor','Status'], rows);
+}
 
-                tr.innerHTML = `
-                    <td class="px-4 py-3 font-medium text-slate-500">${index + 1}</td>
-                    <td class="px-4 py-3">
-                        <div class="font-medium text-slate-800">${item.formatted}</div>
-                        <div class="text-xs text-slate-400">Input: ${item.original}</div>
-                    </td>
-                    <td class="px-4 py-3 text-center">${statusBadge}</td>
-                    <td class="px-4 py-3 text-right">${actionBtn}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            // Update UI Counters & Buttons
-            btnSendNext.disabled = !hasPending || isAutoRunning;
-            btnAutoFonnte.disabled = !hasPending || isAutoRunning;
-            
-            const progressPercentage = Math.round((sentCount / queueData.length) * 100);
-            counter.innerText = `${sentCount} / ${queueData.length} Selesai`;
-            progressBar.style.width = `${progressPercentage}%`;
-
-            if (!hasPending && queueData.length > 0) {
-                btnSendNext.innerText = "Selesai! 🎉";
-                btnAutoFonnte.innerText = "Selesai! 🎉";
-            } else {
-                btnSendNext.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg> Manual WA Web`;
-                
-                if (isAutoRunning) {
-                    btnAutoFonnte.innerHTML = `<svg class="animate-spin w-5 h-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Sedang Jalan...`;
-                } else {
-                    btnAutoFonnte.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Otomatis Fonnte`;
-                }
+function renderPicker() {
+    var sInput = document.getElementById('sendsearch');
+    var q = sInput ? sInput.value.toLowerCase() : '';
+    var sel = document.getElementById('recipient');
+    var old = sel.value;
+    sel.innerHTML = '';
+    
+    for(var i=0; i<contacts.length; i++) {
+        var c = contacts[i];
+        if(c.waStatus !== 'Tidak Aktif') {
+            var str = [c.id, c.name, c.dept].join(' ').toLowerCase();
+            if(str.indexOf(q) !== -1) {
+                var o = document.createElement('option');
+                o.value = c.key;
+                o.textContent = c.id + ' | ' + c.name + ' | ' + c.phone;
+                sel.appendChild(o);
             }
         }
+    }
+    if(old) sel.value = old;
+    selected();
+}
 
-        async function startAutoFonnte() {
-            const token = document.getElementById('input-fonnte-token').value.trim();
-            if (!token) {
-                showToast("Silakan masukkan Token Fonnte terlebih dahulu di form sebelah kiri!", "error");
-                document.getElementById('input-fonnte-token').focus();
-                return;
-            }
-
-            isAutoRunning = true;
-            renderQueue();
-            showToast("Memulai pengiriman otomatis via Fonnte...", "info");
-
-            for (let i = 0; i < queueData.length; i++) {
-                if (!isAutoRunning) break; // Jika dihentikan (misal saat reset)
-                
-                if (queueData[i].status === 'pending' || queueData[i].status === 'failed') {
-                    queueData[i].status = 'sending';
-                    renderQueue();
-
-                    const apiResult = await sendFonnteApi(i, token);
-                    
-                    // Handle specific errors gracefully to stop the loop
-                    if (!apiResult.success) {
-                        if (apiResult.reason && apiResult.reason.toLowerCase().includes("disconnected device")) {
-                            showToast("Proses dihentikan! Perangkat WA Anda terputus di Fonnte.", "error");
-                            
-                            // Tampilkan peringatan permanen yang sangat jelas
-                            const statusDiv = document.getElementById('fonnte-status');
-                            statusDiv.classList.remove('hidden');
-                            statusDiv.className = 'mt-3 text-sm p-3 rounded-md bg-red-50 text-red-700 border border-red-200';
-                            statusDiv.innerHTML = `❌ <strong>Perangkat WhatsApp Terputus!</strong><br>Sistem Fonnte menolak pengiriman karena WA Anda tidak terhubung. Silakan buka Dashboard Fonnte > Menu Device > Klik "Connect/Link Device".`;
-                            
-                            isAutoRunning = false;
-                            renderQueue();
-                            break;
-                        } else if (apiResult.reason && (apiResult.reason.toLowerCase().includes("invalid token") || apiResult.reason.toLowerCase().includes("unauthorized"))) {
-                            showToast("Proses dihentikan! Token Fonnte tidak valid.", "error");
-                            isAutoRunning = false;
-                            renderQueue();
-                            break;
-                        }
-                    }
-                    
-                    // Jeda 2 detik antar pesan agar tidak terkena limit API (Rate Limiting)
-                    await new Promise(r => setTimeout(r, 2000)); 
-                }
-            }
-
-            isAutoRunning = false;
-            renderQueue();
-            
-            // Cek apakah semua berhasil, jangan tampilkan sukses jika sengaja distop karena error fatal
-            const failedCount = queueData.filter(q => q.status === 'failed').length;
-            const hasPending = queueData.some(q => q.status === 'pending');
-            
-            if (!hasPending) {
-                if (failedCount > 0) {
-                    showToast(`Selesai, namun ada ${failedCount} pesan gagal.`, "error");
-                } else {
-                    showToast("Semua pesan berhasil dikirim via Fonnte!", "success");
-                }
-            }
+function selected() {
+    var key = document.getElementById('recipient').value;
+    chosen = null;
+    for(var i=0; i<contacts.length; i++) {
+        if(contacts[i].key === key) {
+            chosen = contacts[i];
+            break;
         }
+    }
+}
 
-        async function checkFonnteDevice() {
-            const token = document.getElementById('input-fonnte-token').value.trim();
-            if (!token) {
-                showToast("Silakan masukkan Token Fonnte terlebih dahulu!", "error");
-                document.getElementById('input-fonnte-token').focus();
-                return;
-            }
+function chooseSend(key) {
+    page('send');
+    document.getElementById('recipient').value = key;
+    selected();
+}
 
-            const statusDiv = document.getElementById('fonnte-status');
-            statusDiv.classList.remove('hidden');
-            statusDiv.className = 'mt-3 text-sm p-3 rounded-md bg-blue-50 text-blue-700 border border-blue-200';
-            statusDiv.innerHTML = `<div class="flex items-center gap-2"><svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Memeriksa koneksi ke Fonnte...</div>`;
+function useTemplate() {
+    var v = document.getElementById('templatepick').value;
+    var tplStr = v === 'miss' ? templates.miss : (v === 'remind' ? templates.remind : '');
+    document.getElementById('msg').value = tplStr;
+}
 
-            const myHeaders = new Headers();
-            myHeaders.append("Authorization", token);
+function openWA() {
+    selected();
+    if(!chosen) {
+        toast('Pilih karyawan terlebih dahulu');
+        return;
+    }
+    
+    var baseMsg = document.getElementById('msg').value;
+    var m = baseMsg.replace(/{nama}/g, chosen.name);
+    
+    if(m.trim() === '') {
+        toast('Isi pesan terlebih dahulu');
+        return;
+    }
+    
+    google.script.run.withSuccessHandler(function() {
+        hist.unshift({time: new Date().toLocaleString('id-ID'), id: chosen.id, name: chosen.name, dept: chosen.dept, phone: chosen.phone, message: m, status: 'Chat dibuka — belum dikonfirmasi', note: '', operator: ''});
+        renderAll();
+        window.open('https://wa.me/' + chosen.phone + '?text=' + encodeURIComponent(m), '_blank');
+        toast('Chat dibuka. Pastikan ubah riwayat jika selesai.');
+    }).withFailureHandler(function(e) {
+        toast(e.message);
+    }).recordActivity(chosen.key, m, 'Chat dibuka — belum dikonfirmasi', 'Menunggu konfirmasi petugas', '');
+}
 
-            try {
-                const response = await fetch("https://api.fonnte.com/device", {
-                    method: 'POST',
-                    headers: myHeaders,
-                    redirect: 'follow'
+// ----------------------------------------------------
+// CUSTOM MODAL (Pengganti Alert/Confirm Bawaan Browser)
+// ----------------------------------------------------
+function showConfirm(message, onYes) {
+    document.getElementById('confirm-msg').textContent = message;
+    confirmCallback = onYes;
+    document.getElementById('modal-confirm').classList.remove('hidden');
+}
+
+function closeConfirm() {
+    document.getElementById('modal-confirm').classList.add('hidden');
+    confirmCallback = null;
+}
+
+document.getElementById('confirm-yes').addEventListener('click', function() {
+    if(confirmCallback) confirmCallback();
+    closeConfirm();
+});
+
+// Aksi Sinkronisasi
+function askSync() {
+    showConfirm('Sinkronkan ulang dari sheet DB? Kontak yang tidak lagi ada di sumber akan diganti daftar sinkronisasi.', function() {
+        google.script.run.withSuccessHandler(function(r) {
+            toast(r.count + ' karyawan disinkronkan');
+            load();
+        }).withFailureHandler(function(e) {
+            toast(e.message);
+        }).syncEmployees();
+    });
+}
+
+// Update WA Karyawan
+function edit(key) {
+    var c = null;
+    for(var i=0; i<contacts.length; i++) {
+        if(contacts[i].key === key) { c = contacts[i]; break; }
+    }
+    if(!c) return;
+    document.getElementById('editkey').value = key;
+    document.getElementById('editphone').value = c.phone;
+    document.getElementById('editstatus').value = c.waStatus || 'Aktif';
+    document.getElementById('editnote').value = c.note || '';
+    document.getElementById('modal').classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('modal').classList.add('hidden');
+}
+
+function saveEdit() {
+    google.script.run.withSuccessHandler(function() {
+        closeModal();
+        toast('Data WA berhasil diperbarui');
+        load();
+    }).withFailureHandler(function(e) {
+        toast(e.message);
+    }).updateContact(
+        document.getElementById('editkey').value,
+        document.getElementById('editphone').value,
+        document.getElementById('editstatus').value,
+        document.getElementById('editnote').value
+    );
+}
+
+// Update Status Riwayat Menggunakan Modal Baru (Bukan Prompt)
+function openHistoryModal(time, id, phone) {
+    var h = null;
+    for(var i=0; i<hist.length; i++) {
+        if(hist[i].id === id && hist[i].phone === phone && hist[i].time === time) { h = hist[i]; break; }
+    }
+    if(!h) return;
+    
+    document.getElementById('hist-time').value = h.time;
+    document.getElementById('hist-id').value = h.id;
+    document.getElementById('hist-phone').value = h.phone;
+    
+    var sel = document.getElementById('hist-new-status');
+    sel.value = h.status; 
+    if(!sel.value) sel.value = "Terkirim (konfirmasi petugas)"; 
+    
+    document.getElementById('hist-new-note').value = h.note || '';
+    document.getElementById('modal-history').classList.remove('hidden');
+}
+
+function closeHistoryModal() {
+    document.getElementById('modal-history').classList.add('hidden');
+}
+
+function saveHistoryStatus() {
+    var time = document.getElementById('hist-time').value;
+    var id = document.getElementById('hist-id').value;
+    var phone = document.getElementById('hist-phone').value;
+    var newStatus = document.getElementById('hist-new-status').value;
+    var newNote = document.getElementById('hist-new-note').value;
+    
+    google.script.run.withSuccessHandler(function() {
+        closeHistoryModal();
+        toast('Status riwayat diperbarui');
+        load();
+    }).withFailureHandler(function(e) {
+        toast(e.message);
+    }).updateHistoryStatus(time, id, phone, newStatus, newNote);
+}
+
+// Aksi Import Excel
+async function importFile(input) {
+    var file = input.files[0];
+    if(!file) return;
+    try {
+        var rows;
+        if(file.name.toLowerCase().indexOf('.csv') !== -1) {
+            var txt = await file.text();
+            var lines = txt.trim().split(/\r?\n/);
+            rows = [];
+            for(var i=0; i<lines.length; i++) rows.push(lines[i].split(','));
+        } else {
+            var buf = await file.arrayBuffer();
+            var wb = XLSX.read(buf, {type: 'array'});
+            var data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval: ''});
+            rows = [];
+            for(var i=0; i<data.length; i++) {
+                var r = data[i];
+                rows.push({
+                    id: r['No ID'] || r['NIK'] || r['ID'],
+                    name: r['Nama'] || r['Nama Karyawan'],
+                    phone: r['No HP'] || r['Nomor HP'] || r['Nomor WhatsApp'],
+                    dept: r['Dept'] || r['Departemen'],
+                    address: r['Alamat'],
+                    status: r['Status WA'],
+                    note: r['Keterangan']
                 });
-                const result = await response.json();
-
-                if (result.status === true) {
-                    const deviceStatus = result.device_status || "Connected";
-                    if (deviceStatus.toLowerCase().includes("disconnect")) {
-                        statusDiv.className = 'mt-3 text-sm p-3 rounded-md bg-red-50 text-red-700 border border-red-200';
-                        statusDiv.innerHTML = `❌ <strong>Perangkat WhatsApp Terputus!</strong><br>Token valid, tetapi WhatsApp Anda belum di-scan atau HP mati. Silakan buka Dashboard Fonnte > Menu Device > Klik "Connect/Link Device".`;
-                    } else {
-                        statusDiv.className = 'mt-3 text-sm p-3 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200';
-                        statusDiv.innerHTML = `✅ <strong>Berhasil Terhubung!</strong><br>Nomor WA: ${result.device || 'Aktif'} | Kuota: ${result.quota || '-'}`;
-                    }
-                } else {
-                    statusDiv.className = 'mt-3 text-sm p-3 rounded-md bg-red-50 text-red-700 border border-red-200';
-                    statusDiv.innerHTML = `❌ <strong>Error Fonnte:</strong> ${result.reason || 'Token tidak valid'}`;
-                }
-            } catch (error) {
-                statusDiv.className = 'mt-3 text-sm p-3 rounded-md bg-red-50 text-red-700 border border-red-200';
-                statusDiv.innerHTML = `❌ <strong>Gagal Menghubungi Server:</strong> Periksa koneksi internet Anda atau Fonnte mungkin sedang down.`;
-                console.warn("Device Check Error:", error);
             }
         }
-
-        async function sendFonnteApi(index, token) {
-            const item = queueData[index];
-            const myHeaders = new Headers();
-            myHeaders.append("Authorization", token);
-
-            const formdata = new FormData();
-            formdata.append("target", item.formatted);
-            formdata.append("message", globalMessage);
-
-            const requestOptions = {
-                method: 'POST',
-                headers: myHeaders,
-                body: formdata,
-                redirect: 'follow'
-            };
-
-            try {
-                const response = await fetch("https://api.fonnte.com/send", requestOptions);
-                const result = await response.json();
-                
-                if (result.status === true) {
-                    queueData[index].status = 'sent';
-                    renderQueue();
-                    return { success: true };
-                } else {
-                    queueData[index].status = 'failed';
-                    // Kita menekan console.error bawaan agar tidak memunculkan notifikasi merah di browser jika masalahnya hanyalah "disconnected device"
-                    if (result.reason && !result.reason.toLowerCase().includes("disconnected")) {
-                        console.warn("Fonnte API Response:", result.reason);
-                    }
-                    renderQueue();
-                    return { success: false, reason: result.reason || "Unknown Error" };
-                }
-            } catch (error) {
-                console.warn("Fetch Error:", error);
-                queueData[index].status = 'failed';
-                renderQueue();
-                return { success: false, reason: "Network Error" };
+        
+        if(rows.length > 0 && typeof rows[0] === 'object' && !Array.isArray(rows[0])) {
+            // Already parsed as objects
+        } else if(rows.length > 0) {
+            var h = rows.shift();
+            for(var i=0; i<h.length; i++) h[i] = String(h[i]).toLowerCase();
+            var objRows = [];
+            for(var i=0; i<rows.length; i++) {
+                var r = rows[i];
+                objRows.push({
+                    id: r[h.findIndex(function(x){return x.indexOf('id') !== -1;})],
+                    name: r[h.findIndex(function(x){return x.indexOf('nama') !== -1;})],
+                    phone: r[h.findIndex(function(x){return x.indexOf('hp') !== -1 || x.indexOf('nomor') !== -1;})],
+                    dept: r[h.findIndex(function(x){return x.indexOf('dept') !== -1 || x.indexOf('departemen') !== -1;})],
+                    address: r[h.findIndex(function(x){return x.indexOf('alamat') !== -1;})],
+                    status: r[h.findIndex(function(x){return x.indexOf('status') !== -1;})],
+                    note: r[h.findIndex(function(x){return x.indexOf('keterangan') !== -1;})]
+                });
             }
+            rows = objRows;
         }
+        
+        google.script.run.withSuccessHandler(function(r) {
+            toast('Import: ' + r.added + ' baru, ' + r.updated + ' diperbarui');
+            load();
+            input.value = '';
+        }).withFailureHandler(function(e) {
+            toast(e.message);
+        }).importRows(rows);
+    } catch(e) {
+        toast('Gagal membaca file: ' + e.message);
+    }
+}
 
-        function sendNext() {
-            const nextIndex = queueData.findIndex(item => item.status === 'pending');
-            if (nextIndex !== -1) {
-                sendSpecific(nextIndex);
-            }
-        }
+function template() {
+    var data = [
+        ['No ID','Nama','Dept','Alamat','No HP','Status WA','Keterangan'],
+        ['EMP001','Budi Santoso','Produksi','Contoh alamat','081234567890','Aktif','Contoh; ganti baris ini']
+    ];
+    var ws = XLSX.utils.aoa_to_sheet(data);
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Karyawan');
+    XLSX.writeFile(wb, 'Template_Import_Karyawan_WA.xlsx');
+}
 
-        function sendSpecific(index) {
-            const item = queueData[index];
-            const url = `https://wa.me/${item.formatted}?text=${encodeURIComponent(globalMessage)}`;
-            
-            // Open WA
-            window.open(url, '_blank');
-            
-            // Mark as sent
-            queueData[index].status = 'sent';
-            renderQueue();
-            
-            // Notification
-            showToast(`Membuka WhatsApp untuk ${item.formatted}`, "info");
-        }
+function downloadReport() {
+    google.script.run.withSuccessHandler(function(r) {
+        var a = document.createElement('a');
+        a.href = 'data:' + r.mime + ';base64,' + r.base64;
+        a.download = r.name;
+        a.click();
+        toast('Laporan Excel berhasil diunduh');
+    }).withFailureHandler(function(e) {
+        toast(e.message);
+    }).xlsxReport();
+}
 
-        function markPending(index) {
-            queueData[index].status = 'pending';
-            renderQueue();
-        }
+function esc(s) {
+    if (s === null || s === undefined) return '';
+    var str = String(s);
+    return str.replace(/[&<>"']/g, function(c) {
+        var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+        return map[c];
+    });
+}
 
-        function resetQueue() {
-            if(confirm("Apakah Anda yakin ingin menghapus semua antrean?")) {
-                isAutoRunning = false; // Stop Fonnte if running
-                queueData = [];
-                document.getElementById('input-numbers').value = "";
-                // document.getElementById('input-message').value = ""; // Optional: keep message
-                
-                // Hide status banner
-                document.getElementById('fonnte-status').classList.add('hidden');
-                
-                renderQueue();
-                showToast("Data telah di-reset.", "success");
-            }
-        }
-
-        // UI Helpers (Toast notification)
-        function showToast(message, type = "success") {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            
-            // Color mapping based on type
-            const colors = {
-                success: "bg-white border-l-4 border-[#25D366] text-slate-800",
-                error: "bg-white border-l-4 border-red-500 text-slate-800",
-                info: "bg-slate-800 text-white"
-            };
-
-            const iconType = type === "error" 
-                ? `<svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`
-                : type === "info"
-                ? `<svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`
-                : `<svg class="w-5 h-5 text-[#25D366]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
-
-            toast.className = `flex items-center gap-3 p-4 rounded shadow-lg min-w-[250px] font-medium text-sm toast-enter ${colors[type]}`;
-            toast.innerHTML = `${iconType} <span>${message}</span>`;
-            
-            container.appendChild(toast);
-
-            // Remove toast after 3 seconds
-            setTimeout(() => {
-                toast.classList.replace('toast-enter', 'toast-exit');
-                setTimeout(() => toast.remove(), 300); // Wait for exit animation
-            }, 3000);
-        }
-
-        // Initialize empty state
-        renderQueue();
-    </script>
+// Mulai aplikasi
+load();
+</script>
 </body>
 </html>
