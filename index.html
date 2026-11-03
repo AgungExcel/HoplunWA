@@ -168,7 +168,7 @@ td .muted{margin-top:4px}
                     </div>
                 </div>
                 <div class="controls" style="margin-top:14px">
-                    <button class="btn" onclick="openWA()">Buka WhatsApp</button>
+                    <button class="btn" onclick="openWA()">Kirim WhatsApp</button>
                     <button class="btn light" onclick="page('history')">Lihat riwayat</button>
                 </div>
             </section>
@@ -292,7 +292,7 @@ td .muted{margin-top:4px}
 // KONFIGURASI GITHUB PAGES / HOSTING EKSTERNAL
 // =====================================================================
 // Salin Web App URL dari GAS (doPost) dan paste di sini jika di-hosting di luar Google (mis. Github)
-const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwg6XCBDm6N9-bQWjabCBJoZz-21wxTTAloI3DfCnUYgTLETNJQef9JXEf9T58C6izuVA/exec"; 
+var GAS_WEB_APP_URL = ""; 
 // =====================================================================
 
 // MOCK API untuk mengakomodasi Github Pages dan environment lokal
@@ -567,13 +567,31 @@ function openWA() {
         return;
     }
     
+    // 1. URL Protokol untuk memaksa langsung buka Aplikasi WA (Mobile / Desktop)
+    var appUrl = 'whatsapp://send?phone=' + chosen.phone + '&text=' + encodeURIComponent(m);
+    
+    var startTime = Date.now();
+    
+    // 2. Eksekusi URL secara langsung (Synchronous) menghindari Popup Blocker browser
+    window.location.href = appUrl;
+    
+    // 3. Deteksi apakah WA App terinstal
+    setTimeout(function() {
+        var timeElapsed = Date.now() - startTime;
+        if (timeElapsed < 2000) {
+            // Peringatan kustom jika aplikasi WA tidak dapat dibuka
+            showConfirm('Aplikasi WhatsApp sepertinya tidak terinstal di perangkat Anda. Buka via browser (WhatsApp Web)?', function() {
+                window.open('https://api.whatsapp.com/send?phone=' + chosen.phone + '&text=' + encodeURIComponent(m), '_blank');
+            });
+        }
+    }, 1500);
+
+    // 4. Simpan riwayat ke Google Sheets berjalan diam-diam di background (Asinkron)
     google.script.run.withSuccessHandler(function() {
         hist.unshift({time: new Date().toLocaleString('id-ID'), id: chosen.id, name: chosen.name, dept: chosen.dept, phone: chosen.phone, message: m, status: 'Chat dibuka — belum dikonfirmasi', note: '', operator: ''});
         renderAll();
-        window.open('https://wa.me/' + chosen.phone + '?text=' + encodeURIComponent(m), '_blank');
-        toast('Chat dibuka. Pastikan ubah riwayat jika selesai.');
     }).withFailureHandler(function(e) {
-        toast(e.message);
+        console.error("Gagal simpan riwayat: ", e);
     }).recordActivity(chosen.key, m, 'Chat dibuka — belum dikonfirmasi', 'Menunggu konfirmasi petugas', '');
 }
 
