@@ -118,7 +118,10 @@ td .muted{margin-top:4px}
             <section class="panel">
                 <div class="head">
                     <h2>Aktivitas terbaru</h2>
-                    <button class="btn light" onclick="page('history')"><i class="fa-solid fa-clock-rotate-left"></i> Lihat riwayat</button>
+                    <div class="controls">
+                        <button class="btn light" onclick="load(true)"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                        <button class="btn light" onclick="page('history')"><i class="fa-solid fa-clock-rotate-left"></i> Lihat riwayat</button>
+                    </div>
                 </div>
                 <div id="recent"></div>
             </section>
@@ -186,7 +189,10 @@ td .muted{margin-top:4px}
             <section class="panel">
                 <div class="head">
                     <h2>Riwayat aktivitas WhatsApp</h2>
-                    <button class="btn" onclick="downloadReport()"><i class="fa-solid fa-file-excel"></i> Download Excel</button>
+                    <div class="controls">
+                        <button class="btn light" onclick="load(true)"><i class="fa-solid fa-rotate"></i> Refresh Data</button>
+                        <button class="btn" onclick="downloadReport()"><i class="fa-solid fa-file-excel"></i> Download Excel</button>
+                    </div>
                 </div>
                 <div class="toolbar">
                     <input class="input search" id="histsearch" placeholder="Cari nama, nomor, status..." oninput="renderHistory()">
@@ -331,6 +337,7 @@ if (typeof google === 'undefined' || typeof google.script === 'undefined') {
                     if(self._cb) self._cb({count: 0}); 
                     toast("Perhatian: URL Web App kosong. Ini adalah Mode Simulasi.", "error");
                 }
+                else if (method === 'deleteContact' || method === 'deleteHistory') { if(self._cb) self._cb(true); }
                 else if (method === 'importRows') { if(self._cb) self._cb({added:0, updated:0}); }
                 else if (method === 'xlsxReport') { if(self._fb) self._fb(new Error("Export Excel butuh URL API")); }
                 else { if(self._cb) self._cb(); }
@@ -340,8 +347,10 @@ if (typeof google === 'undefined' || typeof google.script === 'undefined') {
         },
         getData: function() { return this._call('getData', Array.prototype.slice.call(arguments)); },
         updateContact: function() { return this._call('updateContact', Array.prototype.slice.call(arguments)); },
+        deleteContact: function() { return this._call('deleteContact', Array.prototype.slice.call(arguments)); },
         recordActivity: function() { return this._call('recordActivity', Array.prototype.slice.call(arguments)); },
         updateHistoryStatus: function() { return this._call('updateHistoryStatus', Array.prototype.slice.call(arguments)); },
+        deleteHistory: function() { return this._call('deleteHistory', Array.prototype.slice.call(arguments)); },
         syncEmployees: function() { return this._call('syncEmployees', Array.prototype.slice.call(arguments)); },
         importRows: function() { return this._call('importRows', Array.prototype.slice.call(arguments)); },
         xlsxReport: function() { return this._call('xlsxReport', Array.prototype.slice.call(arguments)); }
@@ -406,8 +415,8 @@ function setSyncStatus(status, message) {
     }
 }
 
-function load() {
-    setSyncStatus('loading', 'Memuat data...');
+function load(silent) {
+    if (!silent) setSyncStatus('loading', 'Memuat data...');
     google.script.run.withSuccessHandler(function(d) {
         contacts = d.contacts ? d.contacts : [];
         hist = d.history ? d.history : [];
@@ -417,8 +426,9 @@ function load() {
         if (isFirstLoad) {
             isFirstLoad = false;
             autoSync(); 
-        } else {
+        } else if (!silent) {
             setSyncStatus('synced', 'Tersinkron');
+            toast('Data berhasil diperbarui dari GSheet');
         }
     }).withFailureHandler(function(e) {
         toast(e.message ? e.message : e);
@@ -430,9 +440,10 @@ function autoSync() {
     setSyncStatus('loading', 'Sinkronisasi Otomatis...');
     google.script.run.withSuccessHandler(function(r) {
         setSyncStatus('synced', 'Tersinkron (' + r.count + ' data)');
-        // Jika terdapat koneksi sukses, update kontak diam-diam di background
+        // Update kontak dan riwayat berjalan diam-diam agar jika dihapus di GSheet ikut terhapus di aplikasi
         google.script.run.withSuccessHandler(function(d) {
             contacts = d.contacts ? d.contacts : [];
+            hist = d.history ? d.history : [];
             renderAll();
         }).getData();
     }).withFailureHandler(function(e) {
@@ -518,7 +529,7 @@ function renderEmployees() {
     for(var i=0; i<arr.length; i++) {
         var c = arr[i];
         var warnClass = c.waStatus === 'Aktif' ? '' : 'warn';
-        rows.push('<tr><td>' + esc(c.id) + '</td><td><b>' + esc(c.name) + '</b><div class="muted">' + esc(c.dept) + '</div></td><td>' + esc(c.phone) + '</td><td><span class="status ' + warnClass + '">' + esc(c.waStatus) + '</span><div class="muted">' + esc(c.note) + '</div></td><td><button class="btn light small" onclick="edit(\'' + c.key + '\')"><i class="fa-solid fa-pen"></i> Edit WA</button> <button class="btn small" onclick="chooseSend(\'' + c.key + '\')"><i class="fa-brands fa-whatsapp"></i> WA</button></td></tr>');
+        rows.push('<tr><td>' + esc(c.id) + '</td><td><b>' + esc(c.name) + '</b><div class="muted">' + esc(c.dept) + '</div></td><td>' + esc(c.phone) + '</td><td><span class="status ' + warnClass + '">' + esc(c.waStatus) + '</span><div class="muted">' + esc(c.note) + '</div></td><td><button class="btn light small" title="Edit WA" onclick="edit(\'' + c.key + '\')"><i class="fa-solid fa-pen"></i></button> <button class="btn red small" title="Hapus Karyawan" onclick="deleteEmployee(\'' + c.key + '\', \'' + esc(c.name) + '\')"><i class="fa-solid fa-trash"></i></button> <button class="btn small" onclick="chooseSend(\'' + c.key + '\')"><i class="fa-brands fa-whatsapp"></i> WA</button></td></tr>');
     }
     document.getElementById('employeetable').innerHTML = table(['No ID','Nama / Dept','Nomor HP','Status','Aksi'], rows);
 }
@@ -542,7 +553,7 @@ function renderHistory() {
     for(var i=0; i<arr.length; i++) {
         var h = arr[i];
         var msgShort = h.message ? h.message.slice(0,70) : '';
-        rows.push('<tr><td>' + esc(h.time) + '</td><td>' + esc(h.id) + '<div class="muted">' + esc(h.name) + '</div></td><td>' + esc(h.phone) + '</td><td>' + esc(h.status) + '<div class="muted">' + esc(h.note) + '</div></td><td title="' + esc(h.message) + '">' + esc(msgShort) + '...</td><td><button class="btn light small" onclick="openHistoryModal(\'' + esc(h.time) + '\',\'' + esc(h.id) + '\',\'' + esc(h.phone) + '\')"><i class="fa-solid fa-pen"></i> Update status</button></td></tr>');
+        rows.push('<tr><td>' + esc(h.time) + '</td><td>' + esc(h.id) + '<div class="muted">' + esc(h.name) + '</div></td><td>' + esc(h.phone) + '</td><td>' + esc(h.status) + '<div class="muted">' + esc(h.note) + '</div></td><td title="' + esc(h.message) + '">' + esc(msgShort) + '...</td><td><button class="btn light small" title="Update Status" onclick="openHistoryModal(\'' + esc(h.time) + '\',\'' + esc(h.id) + '\',\'' + esc(h.phone) + '\')"><i class="fa-solid fa-pen"></i></button> <button class="btn red small" title="Hapus Riwayat" onclick="askDeleteHistory(\'' + esc(h.time) + '\',\'' + esc(h.id) + '\',\'' + esc(h.phone) + '\')"><i class="fa-solid fa-trash"></i></button></td></tr>');
     }
     document.getElementById('historytable').innerHTML = table(['Waktu','Karyawan','Nomor','Status / Keterangan','Pesan','Aksi'], rows);
 }
@@ -592,6 +603,9 @@ function selected() {
 }
 
 function chooseSend(key) {
+    var sInput = document.getElementById('sendsearch');
+    if(sInput) sInput.value = ''; // Kosongkan pencarian terlebih dahulu agar nomor yg diklik muncul dalam daftar
+
     page('send');
     document.getElementById('recipient').value = key;
     selected();
@@ -701,7 +715,7 @@ function saveEdit() {
     google.script.run.withSuccessHandler(function() {
         closeModal();
         toast('Data WA berhasil diperbarui');
-        load();
+        load(true);
     }).withFailureHandler(function(e) {
         toast(e.message);
     }).updateContact(
@@ -710,6 +724,17 @@ function saveEdit() {
         document.getElementById('editstatus').value,
         document.getElementById('editnote').value
     );
+}
+
+function deleteEmployee(key, name) {
+    showConfirm('Yakin ingin menghapus data karyawan: ' + name + '?', function() {
+        google.script.run.withSuccessHandler(function() {
+            toast('Karyawan berhasil dihapus');
+            load(true); 
+        }).withFailureHandler(function(e) {
+            toast(e.message);
+        }).deleteContact(key);
+    });
 }
 
 // Update Status Riwayat Menggunakan Modal Baru (Bukan Prompt)
@@ -746,10 +771,21 @@ function saveHistoryStatus() {
     google.script.run.withSuccessHandler(function() {
         closeHistoryModal();
         toast('Status riwayat diperbarui');
-        load();
+        load(true);
     }).withFailureHandler(function(e) {
         toast(e.message);
     }).updateHistoryStatus(time, id, phone, newStatus, newNote);
+}
+
+function askDeleteHistory(time, id, phone) {
+    showConfirm('Yakin ingin menghapus riwayat ini secara permanen?', function() {
+        google.script.run.withSuccessHandler(function() {
+            toast('Riwayat berhasil dihapus');
+            load(true); 
+        }).withFailureHandler(function(e) {
+            toast(e.message);
+        }).deleteHistory(time, id, phone);
+    });
 }
 
 // Aksi Import Excel
