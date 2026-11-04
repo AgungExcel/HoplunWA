@@ -141,6 +141,11 @@ td .muted{margin-top:4px}
                 </div>
                 <div class="toolbar">
                     <input class="input search" id="empsearch" placeholder="Cari No ID, nama, departemen, nomor..." oninput="renderEmployees()">
+                    <select id="emp-source" style="max-width:180px" onchange="renderEmployees()">
+                        <option value="all">Semua Sumber Data</option>
+                        <option value="gsheet">Hanya GSheet</option>
+                        <option value="import">Hanya Import Manual</option>
+                    </select>
                     <select id="filterwa" style="max-width:180px" onchange="renderEmployees()">
                         <option value="">Semua status WA</option>
                         <option>Aktif</option>
@@ -223,7 +228,7 @@ td .muted{margin-top:4px}
             <section class="panel" style="max-width: 800px;">
                 <div class="head">
                     <h2>Pengaturan Template Pesan</h2>
-                    <span class="muted">Tersimpan di perangkat Anda</span>
+                    <span class="muted">Tersimpan di server (sinkron antar perangkat)</span>
                 </div>
                 <p class="muted" style="margin-top:0">Gunakan tag <b>{nama}</b> untuk memanggil nama karyawan secara otomatis ke dalam teks.</p>
                 
@@ -313,7 +318,7 @@ td .muted{margin-top:4px}
 // =====================================================================
 // KONFIGURASI GITHUB PAGES / HOSTING EKSTERNAL
 // =====================================================================
-// Salin Web App URL dari GAS (doPost) dan paste di sini jika di-hosting di luar Google (mis. Github)
+// Web App URL dari GAS (doPost)
 var GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwg6XCBDm6N9-bQWjabCBJoZz-21wxTTAloI3DfCnUYgTLETNJQef9JXEf9T58C6izuVA/exec"; 
 // =====================================================================
 
@@ -346,6 +351,8 @@ if (typeof google === 'undefined' || typeof google.script === 'undefined') {
                     toast("Perhatian: URL Web App kosong. Ini adalah Mode Simulasi.", "error");
                 }
                 else if (method === 'deleteContact' || method === 'deleteHistory') { if(self._cb) self._cb(true); }
+                else if (method === 'getTemplates') { if(self._cb) self._cb(null); }
+                else if (method === 'saveTemplates') { if(self._cb) self._cb(true); }
                 else if (method === 'importRows') { if(self._cb) self._cb({added:0, updated:0}); }
                 else if (method === 'xlsxReport') { if(self._fb) self._fb(new Error("Export Excel butuh URL API")); }
                 else { if(self._cb) self._cb(); }
@@ -359,6 +366,8 @@ if (typeof google === 'undefined' || typeof google.script === 'undefined') {
         recordActivity: function() { return this._call('recordActivity', Array.prototype.slice.call(arguments)); },
         updateHistoryStatus: function() { return this._call('updateHistoryStatus', Array.prototype.slice.call(arguments)); },
         deleteHistory: function() { return this._call('deleteHistory', Array.prototype.slice.call(arguments)); },
+        getTemplates: function() { return this._call('getTemplates', Array.prototype.slice.call(arguments)); },
+        saveTemplates: function() { return this._call('saveTemplates', Array.prototype.slice.call(arguments)); },
         syncEmployees: function() { return this._call('syncEmployees', Array.prototype.slice.call(arguments)); },
         importRows: function() { return this._call('importRows', Array.prototype.slice.call(arguments)); },
         xlsxReport: function() { return this._call('xlsxReport', Array.prototype.slice.call(arguments)); }
@@ -398,7 +407,12 @@ function saveTemplates() {
     templates.miss = document.getElementById('setting-tpl-miss').value;
     templates.remind = document.getElementById('setting-tpl-remind').value;
     localStorage.setItem('hoplun_templates', JSON.stringify(templates));
-    toast('Pengaturan template berhasil disimpan!');
+    
+    google.script.run.withSuccessHandler(function() {
+        toast('Template berhasil disimpan secara Global (Server)!');
+    }).withFailureHandler(function() {
+        toast('Disimpan lokal (Backend server belum dipasang)');
+    }).saveTemplates(templates);
 }
 
 function toast(t) {
@@ -428,20 +442,30 @@ function load(silent) {
     google.script.run.withSuccessHandler(function(d) {
         contacts = d.contacts ? d.contacts : [];
         hist = d.history ? d.history : [];
-        renderAll();
         
-        // Memicu auto-sync hanya pada load pertama
-        if (isFirstLoad) {
-            isFirstLoad = false;
-            autoSync(); 
-        } else if (!silent) {
-            setSyncStatus('synced', 'Tersinkron');
-            toast('Data berhasil diperbarui dari GSheet');
-        }
+        // Ambil template dari server agar sinkron di semua laptop
+        google.script.run.withSuccessHandler(function(tpls) {
+            if(tpls && tpls.miss) templates = tpls;
+            finalizeLoad(silent);
+        }).withFailureHandler(function() {
+            finalizeLoad(silent); // Fallback ke lokal jika fungsi belum ditambahkan
+        }).getTemplates();
+        
     }).withFailureHandler(function(e) {
         toast(e.message ? e.message : e);
         setSyncStatus('error', 'Gagal memuat');
     }).getData();
+}
+
+function finalizeLoad(silent) {
+    renderAll();
+    if (isFirstLoad) {
+        isFirstLoad = false;
+        autoSync(); 
+    } else if (!silent) {
+        setSyncStatus('synced', 'Tersinkron');
+        toast('Data berhasil diperbarui dari GSheet');
+    }
 }
 
 function autoSync() {
@@ -490,18 +514,33 @@ function renderAll() {
 }
 
 function renderMetrics() {
-    var sent = 0, failed = 0, opened = 0;
+    var totalData = contacts.length;
+    var importData = 0;
+    
+    for(var i=0; i<contacts.length; i++) {
+        var c = contacts[i];
+        if ((String(c.id).indexOf('IMP-') === 0) || (c.dept === 'Import Manual' || c.note === 'Data Import')) {
+            importData++;
+        }
+    }
+
+    var contactedIds = {};
     for(var i=0; i<hist.length; i++) {
-        if(hist[i].status === 'Terkirim (konfirmasi petugas)') sent++;
-        else if(hist[i].status === 'Gagal' || hist[i].status === 'Nomor tidak aktif' || hist[i].status === 'Nomor berganti') failed++;
-        else if(hist[i].status && hist[i].status.indexOf('belum dikonfirmasi') !== -1) opened++;
+        // Anggap nomor yang di WA sebagai kunci unik (jika tidak gagal)
+        if (hist[i].status !== 'Gagal' && hist[i].status !== 'Nomor tidak aktif') {
+            contactedIds[hist[i].phone] = true;
+        }
     }
     
+    var sudahWA = Object.keys(contactedIds).length;
+    var sisaWA = totalData - sudahWA;
+    if (sisaWA < 0) sisaWA = 0;
+    
     var arr = [
-        ['Total karyawan', contacts.length],
-        ['Terkirim*', sent],
-        ['Belum konfirmasi', opened],
-        ['Gagal / kendala', failed]
+        ['Total Data (Semua)', totalData],
+        ['Data Import Manual', importData],
+        ['Sudah di-WA (Unik)', sudahWA],
+        ['Sisa Belum di-WA', sisaWA]
     ];
     
     var html = '';
@@ -523,10 +562,17 @@ function renderEmployees() {
     var q = empInput ? empInput.value.toLowerCase() : '';
     var filterInput = document.getElementById('filterwa');
     var f = filterInput ? filterInput.value : '';
+    var sourceInput = document.getElementById('emp-source');
+    var src = sourceInput ? sourceInput.value : 'all';
     
     var arr = [];
     for(var i=0; i<contacts.length; i++) {
         var c = contacts[i];
+        var isImport = (String(c.id).indexOf('IMP-') === 0) || (c.dept === 'Import Manual' || c.note === 'Data Import');
+        
+        if (src === 'gsheet' && isImport) continue;
+        if (src === 'import' && !isImport) continue;
+        
         var str = [c.id, c.name, c.dept, c.phone].join(' ').toLowerCase();
         if(str.indexOf(q) !== -1 && (!f || c.waStatus === f)) {
             arr.push(c);
