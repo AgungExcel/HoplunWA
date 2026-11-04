@@ -163,7 +163,15 @@ td .muted{margin-top:4px}
                     <div>
                         <label>Cari karyawan</label>
                         <input class="input" id="sendsearch" placeholder="Nama atau No ID..." oninput="renderPicker()">
-                        <label>Pilih penerima</label>
+                        
+                        <label style="margin-top: 10px;">Sumber Data</label>
+                        <select id="sendsource" class="input" onchange="renderPicker()">
+                            <option value="all">Semua Data</option>
+                            <option value="gsheet">Data Otomatis (GSheet)</option>
+                            <option value="import">Data Import Manual</option>
+                        </select>
+
+                        <label style="margin-top: 10px;">Pilih penerima</label>
                         <select id="recipient" size="7" onchange="selected()"></select>
                     </div>
                     <div>
@@ -571,6 +579,8 @@ function renderRecent() {
 function renderPicker() {
     var sInput = document.getElementById('sendsearch');
     var q = sInput ? sInput.value.toLowerCase() : '';
+    var sourceFilter = document.getElementById('sendsource') ? document.getElementById('sendsource').value : 'all';
+    
     var sel = document.getElementById('recipient');
     var old = sel.value;
     sel.innerHTML = '';
@@ -578,11 +588,18 @@ function renderPicker() {
     for(var i=0; i<contacts.length; i++) {
         var c = contacts[i];
         if(c.waStatus !== 'Tidak Aktif') {
+            // Deteksi apakah data ini dari import manual (memiliki ID IMP- atau dept Import Manual)
+            var isImport = (String(c.id).indexOf('IMP-') === 0) || (c.dept === 'Import Manual' || c.note === 'Data Import');
+            
+            // Filter berdasarkan dropdown sumber data
+            if (sourceFilter === 'gsheet' && isImport) continue;
+            if (sourceFilter === 'import' && !isImport) continue;
+
             var str = [c.id, c.name, c.dept].join(' ').toLowerCase();
             if(str.indexOf(q) !== -1) {
                 var o = document.createElement('option');
                 o.value = c.key;
-                o.textContent = c.id + ' | ' + c.name + ' | ' + c.phone;
+                o.textContent = (isImport ? '[Import] ' : '') + c.id + ' | ' + c.name + ' | ' + c.phone;
                 sel.appendChild(o);
             }
         }
@@ -807,13 +824,13 @@ async function importFile(input) {
             for(var i=0; i<data.length; i++) {
                 var r = data[i];
                 rows.push({
-                    id: r['No ID'] || r['NIK'] || r['ID'],
-                    name: r['Nama'] || r['Nama Karyawan'],
-                    phone: r['No HP'] || r['Nomor HP'] || r['Nomor WhatsApp'],
-                    dept: r['Dept'] || r['Departemen'],
-                    address: r['Alamat'],
-                    status: r['Status WA'],
-                    note: r['Keterangan']
+                    id: r['No ID'] || r['NIK'] || r['ID'] || '',
+                    name: r['Nama'] || r['Nama Karyawan'] || '',
+                    phone: r['No HP'] || r['Nomor HP'] || r['Nomor WhatsApp'] || '',
+                    dept: r['Dept'] || r['Departemen'] || 'Import Manual',
+                    address: r['Alamat'] || '',
+                    status: r['Status WA'] || 'Aktif',
+                    note: r['Keterangan'] || 'Data Import'
                 });
             }
         }
@@ -826,14 +843,18 @@ async function importFile(input) {
             var objRows = [];
             for(var i=0; i<rows.length; i++) {
                 var r = rows[i];
+                var idxId = h.findIndex(function(x){return x.indexOf('id') !== -1;});
+                var idxName = h.findIndex(function(x){return x.indexOf('nama') !== -1;});
+                var idxPhone = h.findIndex(function(x){return x.indexOf('hp') !== -1 || x.indexOf('nomor') !== -1;});
+                
                 objRows.push({
-                    id: r[h.findIndex(function(x){return x.indexOf('id') !== -1;})],
-                    name: r[h.findIndex(function(x){return x.indexOf('nama') !== -1;})],
-                    phone: r[h.findIndex(function(x){return x.indexOf('hp') !== -1 || x.indexOf('nomor') !== -1;})],
-                    dept: r[h.findIndex(function(x){return x.indexOf('dept') !== -1 || x.indexOf('departemen') !== -1;})],
-                    address: r[h.findIndex(function(x){return x.indexOf('alamat') !== -1;})],
-                    status: r[h.findIndex(function(x){return x.indexOf('status') !== -1;})],
-                    note: r[h.findIndex(function(x){return x.indexOf('keterangan') !== -1;})]
+                    id: idxId !== -1 ? r[idxId] : '',
+                    name: idxName !== -1 ? r[idxName] : '',
+                    phone: idxPhone !== -1 ? r[idxPhone] : '',
+                    dept: 'Import Manual',
+                    address: '',
+                    status: 'Aktif',
+                    note: 'Data Import'
                 });
             }
             rows = objRows;
@@ -853,12 +874,14 @@ async function importFile(input) {
 
 function template() {
     var data = [
-        ['No ID','Nama','Dept','Alamat','No HP','Status WA','Keterangan'],
-        ['EMP001','Budi Santoso','Produksi','Contoh alamat','081234567890','Aktif','Contoh; ganti baris ini']
+        ['Nama','No HP'],
+        ['Budi Santoso','081234567890'],
+        ['Ayu Lestari','+6281234567891'],
+        ['Joko Widodo','6281234567892']
     ];
     var ws = XLSX.utils.aoa_to_sheet(data);
     var wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Karyawan');
+    XLSX.utils.book_append_sheet(wb, ws, 'Data_Import');
     XLSX.writeFile(wb, 'Template_Import_Karyawan_WA.xlsx');
 }
 
